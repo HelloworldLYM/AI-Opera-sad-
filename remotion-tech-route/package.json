@@ -1,0 +1,29 @@
+{
+  "name": "ai-opera-realtime-input-route",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.jsx --port=3210",
+    "still": "remotion still src/index.jsx RealtimeInputRoute out/realtime-input-route-preview.png --frame=190 --port=3210",
+    "render": "remotion render src/index.jsx RealtimeInputRoute out/realtime-input-route.mp4 --codec=h264 --audio-codec=aac --port=3210",
+    "promo:still": "remotion still src/index.jsx AIOperaPromo out/ai-opera-promo-preview.png --frame=450 --port=3210",
+    "promo:render": "remotion render src/index.jsx AIOperaPromo out/ai-opera-promo.mp4 --codec=h264 --audio-codec=aac --port=3210",
+    "element:still": "remotion still src/index.jsx AIOperaElementReveal out/ai-opera-element-reveal-preview.png --frame=90 --port=3210",
+    "element:render": "remotion render src/index.jsx AIOperaElementReveal out/ai-opera-element-reveal.mp4 --codec=h264 --audio-codec=aac --port=3210",
+    "hyperframes:still": "remotion still src/index.jsx AIOperaHyperframes ../ai-opera-hyperframes/out/ai-opera-hyperframes-preview.png --frame=450 --port=3210",
+    "hyperframes:render": "remotion render src/index.jsx AIOperaHyperframes ../ai-opera-hyperframes/out/ai-opera-hyperframes.mp4 --codec=h264 --audio-codec=aac --port=3210",
+    "panel:visual:still": "remotion still src/index.jsx AIOperaVisualTriggerPanels out/visual-trigger-panels-preview.png --frame=78 --port=3210",
+    "panel:visual:render": "remotion render src/index.jsx AIOperaVisualTriggerPanels out/visual-trigger-panels.mp4 --codec=h264 --audio-codec=aac --port=3210",
+    "panel:modeling:still": "remotion still src/index.jsx AIOperaModelingPanels out/modeling-panels-preview.png --frame=88 --port=3210",
+    "panel:modeling:render": "remotion render src/index.jsx AIOperaModelingPanels out/modeling-panels.mp4 --codec=h264 --audio-codec=aac --port=3210",
+    "venue:still": "remotion still src/index.jsx AIOperaVenueSequence out/venue-sequence-preview.png --frame=230 --port=3210",
+    "venue:render": "remotion render src/index.jsx AIOperaVenueSequence out/ai-opera-venue-sequence.mp4 --codec=h264 --audio-codec=aac --port=3210"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.0"
+  }
+}

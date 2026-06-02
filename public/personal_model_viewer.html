@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人专属三维脸谱模型</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      color-scheme: dark;
+      --bg: #04070d;
+      --panel: rgba(8, 14, 24, 0.76);
+      --panel-strong: rgba(10, 18, 30, 0.88);
+      --line: rgba(127, 229, 255, 0.18);
+      --line-gold: rgba(255, 230, 173, 0.32);
+      --text: #f6f3e8;
+      --muted: rgba(246, 243, 232, 0.72);
+      --gold: #ffe6ad;
+      --gold-deep: #d7a84a;
+      --cyan: #7fe5ff;
+      --red: #d92d20;
+      --font-title: "STKaiti", "KaiTi", "Kaiti SC", "Songti SC", "Source Han Serif SC", serif;
+      --font-body: "Microsoft YaHei", "PingFang SC", "HarmonyOS Sans SC", sans-serif;
+      --font-data: "Cascadia Mono", "Consolas", monospace;
+    }
+
+    html {
+      font-size: 17px;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      z-index: -3;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(217, 45, 32, 0.18), transparent 24%),
+        radial-gradient(circle at 76% 14%, rgba(127, 229, 255, 0.15), transparent 22%),
+        radial-gradient(circle at 58% 82%, rgba(255, 230, 173, 0.12), transparent 26%),
+        linear-gradient(180deg, rgba(4, 7, 13, 0.46), rgba(4, 7, 13, 0.96)),
+        url("/legacy/gallary_bg.png") center center / cover fixed no-repeat,
+        #110202;
+    }
+
+    body::after {
+      z-index: -2;
+      background:
+        repeating-linear-gradient(90deg, rgba(127, 229, 255, 0.035) 0, rgba(127, 229, 255, 0.035) 1px, transparent 1px, transparent 88px),
+        repeating-linear-gradient(180deg, rgba(127, 229, 255, 0.018) 0, rgba(127, 229, 255, 0.018) 1px, transparent 1px, transparent 68px);
+      opacity: 0.5;
+      mix-blend-mode: screen;
+    }
+
+    button,
+    a {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 2px solid rgba(127, 229, 255, 0.86);
+      outline-offset: 4px;
+    }
+
+    .model-page {
+      width: min(1480px, calc(100% - 28px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 22px 0 30px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(8, 14, 24, 0.9), rgba(7, 12, 20, 0.72));
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 230, 163, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 230, 163, 0.07);
+      color: var(--gold);
+      font-family: var(--font-title);
+      font-size: 0.92rem;
+      letter-spacing: 0.18em;
+    }
+
+    h1 {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: clamp(2rem, 4.2vw, 3.8rem);
+      line-height: 1.08;
+      letter-spacing: 0.12em;
+      text-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.72),
+        0 0 28px rgba(255, 215, 96, 0.18);
+    }
+
+    .topbar-copy p {
+      max-width: 68ch;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.78;
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .nav-button,
+    .tool-button {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 17px;
+      border: 1px solid rgba(255, 230, 163, 0.22);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-family: var(--font-title);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        background-color 180ms ease;
+    }
+
+    .nav-button:hover,
+    .tool-button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(127, 229, 255, 0.34);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26);
+    }
+
+    .nav-button.primary {
+      color: #321400;
+      background: linear-gradient(135deg, #ffe6ad, #d7a84a 62%, #9d5b12);
+      border-color: rgba(255, 230, 163, 0.5);
+    }
+
+    .viewer-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(330px, 420px);
+      gap: 20px;
+      margin-top: 20px;
+      align-items: stretch;
+    }
+
+    .viewer-stage {
+      position: relative;
+      min-height: min(70vh, 760px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        radial-gradient(ellipse at 50% 13%, rgba(255, 244, 209, 0.16), transparent 17%),
+        radial-gradient(ellipse at 50% 72%, rgba(255, 230, 173, 0.1), transparent 32%),
+        linear-gradient(180deg, rgba(8, 14, 24, 0.92), rgba(4, 7, 13, 0.82));
+      box-shadow: 0 34px 100px rgba(0, 0, 0, 0.48);
+      backdrop-filter: blur(18px);
+      isolation: isolate;
+    }
+
+    .viewer-stage::before {
+      content: "";
+      position: absolute;
+      top: -18%;
+      left: 50%;
+      z-index: 0;
+      width: min(42vw, 560px);
+      height: 86%;
+      transform: translateX(-50%);
+      clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+      background:
+        radial-gradient(ellipse at 50% 4%, rgba(255, 250, 226, 0.42), transparent 18%),
+        radial-gradient(ellipse at 43% 34%, rgba(255, 229, 166, 0.18), transparent 28%),
+        radial-gradient(ellipse at 62% 58%, rgba(127, 229, 255, 0.08), transparent 36%),
+        linear-gradient(180deg, rgba(255, 238, 188, 0.28), rgba(215, 168, 74, 0.13) 40%, transparent 76%);
+      filter: blur(3px);
+      opacity: 0.82;
+    }
+
+    .viewer-stage::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 12%;
+      z-index: 0;
+      width: min(46vw, 620px);
+      height: 140px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 230, 173, 0.18), rgba(127, 229, 255, 0.08) 48%, transparent 76%);
+      filter: blur(14px);
+    }
+
+    #modelStage {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    #modelStage canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .stage-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 45%, transparent 34%, rgba(0, 0, 0, 0.28) 72%, rgba(0, 0, 0, 0.5)),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.34), transparent 24%, transparent 76%, rgba(0, 0, 0, 0.36));
+    }
+
+    .model-hud {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      z-index: 4;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .hud-chip {
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid rgba(127, 229, 255, 0.18);
+      border-radius: 999px;
+      background: rgba(5, 12, 20, 0.68);
+      color: rgba(246, 243, 232, 0.78);
+      font-family: var(--font-data);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      backdrop-filter: blur(12px);
+    }
+
+    .hud-chip strong {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .status-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(4, 7, 13, 0.54);
+      text-align: center;
+      transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .status-layer.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .status-card {
+      width: min(520px, 100%);
+      padding: 26px 28px;
+      border: 1px solid rgba(255, 230, 173, 0.28);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(8, 14, 24, 0.9), rgba(9, 12, 18, 0.82));
+      box-shadow: 0 28px 76px rgba(0, 0, 0, 0.46);
+    }
+
+    .status-card h2 {
+      color: var(--gold);
+      font-family: var(--font-title);
+      font-size: 1.45rem;
+      letter-spacing: 0.12em;
+      margin-bottom: 10px;
+    }
+
+    .status-card p {
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.72;
+    }
+
+    .info-panel {
+      min-height: min(70vh, 760px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        linear-gradient(180deg, rgba(8, 14, 24, 0.9), rgba(7, 12, 20, 0.76)),
+        radial-gradient(circle at 20% 0%, rgba(217, 45, 32, 0.12), transparent 32%);
+      box-shadow: 0 34px 100px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(18px);
+    }
+
+    .face-preview {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .face-preview-frame {
+      width: 96px;
+      height: 116px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: 10px;
+      border: 1px solid rgba(255, 230, 173, 0.26);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 34%, rgba(255, 230, 173, 0.14), transparent 58%),
+        rgba(0, 0, 0, 0.28);
+    }
+
+    .face-preview-frame img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.48));
+    }
+
+    .face-title {
+      display: grid;
+      gap: 8px;
+    }
+
+    .face-title h2 {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: 1.8rem;
+      line-height: 1.12;
+      letter-spacing: 0.12em;
+    }
+
+    .face-role {
+      width: fit-content;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 230, 173, 0.26);
+      border-radius: 999px;
+      background: rgba(255, 230, 173, 0.07);
+      color: var(--gold);
+      font-family: var(--font-title);
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+    }
+
+    .copy-block {
+      display: grid;
+      gap: 12px;
+      color: rgba(246, 243, 232, 0.78);
+      font-size: 0.98rem;
+      line-height: 1.82;
+    }
+
+    .experienced-panel {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(127, 229, 255, 0.14);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(217, 45, 32, 0.16), transparent 30%),
+        linear-gradient(180deg, rgba(255, 230, 173, 0.055), rgba(255, 255, 255, 0.025));
+    }
+
+    .experienced-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .experienced-head h3 {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: 1.28rem;
+      line-height: 1.12;
+      letter-spacing: 0.12em;
+    }
+
+    .experienced-head p {
+      margin-top: 6px;
+      color: rgba(246, 243, 232, 0.62);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .experienced-count {
+      flex: 0 0 auto;
+      min-width: 48px;
+      padding: 7px 9px;
+      border: 1px solid rgba(255, 230, 173, 0.22);
+      border-radius: 999px;
+      color: var(--cyan);
+      background: rgba(127, 229, 255, 0.06);
+      font-family: var(--font-data);
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    .experienced-list {
+      display: grid;
+      gap: 9px;
+      max-height: 258px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .experienced-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .experienced-list::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(255, 230, 173, 0.24);
+    }
+
+    .experienced-mask-item {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      min-height: 70px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 230, 173, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.032);
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        background-color 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .experienced-mask-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(127, 229, 255, 0.26);
+      background: rgba(127, 229, 255, 0.06);
+    }
+
+    .experienced-mask-item.is-active {
+      border-color: rgba(255, 230, 173, 0.48);
+      background:
+        radial-gradient(circle at 18% 50%, rgba(255, 230, 173, 0.18), transparent 36%),
+        rgba(127, 229, 255, 0.055);
+      box-shadow: inset 0 0 0 1px rgba(255, 230, 173, 0.12);
+    }
+
+    .experienced-mask-thumb {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 1px solid rgba(255, 230, 173, 0.18);
+      border-radius: 12px;
+      background: rgba(3, 8, 14, 0.76);
+    }
+
+    .experienced-mask-thumb img {
+      width: 88%;
+      height: 88%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.42));
+    }
+
+    .experienced-mask-copy {
+      min-width: 0;
+      display: grid;
+      gap: 5px;
+    }
+
+    .experienced-mask-name {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .experienced-mask-role {
+      color: rgba(246, 243, 232, 0.62);
+      font-size: 0.8rem;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .experienced-empty {
+      min-height: 70px;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+      border: 1px dashed rgba(255, 230, 173, 0.2);
+      border-radius: 14px;
+      color: rgba(246, 243, 232, 0.62);
+      font-size: 0.86rem;
+      text-align: center;
+    }
+
+    .model-meta-sink[hidden] {
+      display: none !important;
+    }
+
+    .tool-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 8px;
+    }
+
+    .tool-button {
+      flex: 1 1 150px;
+      min-height: 42px;
+      padding: 10px 14px;
+      font-size: 0.96rem;
+    }
+
+    .tool-button.active {
+      color: #071626;
+      background: linear-gradient(135deg, rgba(127, 229, 255, 0.96), rgba(255, 230, 173, 0.92));
+      border-color: rgba(127, 229, 255, 0.42);
+    }
+
+    @media (max-width: 980px) {
+      html {
+        font-size: 16.5px;
+      }
+
+      .topbar,
+      .viewer-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .topbar-actions {
+        justify-content: flex-start;
+      }
+
+      .viewer-layout {
+        display: grid;
+      }
+
+      .viewer-stage {
+        min-height: 58vh;
+      }
+
+      .info-panel {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .model-page {
+        width: min(100% - 20px, 620px);
+        padding-top: 12px;
+      }
+
+      .topbar,
+      .viewer-stage,
+      .info-panel {
+        border-radius: 18px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      .topbar-actions,
+      .nav-button {
+        width: 100%;
+      }
+
+      .viewer-stage {
+        min-height: 520px;
+      }
+
+      .face-preview {
+        grid-template-columns: 84px 1fr;
+      }
+
+      .face-preview-frame {
+        width: 84px;
+        height: 104px;
+      }
+
+      .experienced-list {
+        max-height: none;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/legacy/taste_refinement.css" />
+</head>
+<body>
+  <main class="model-page">
+    <header class="topbar">
+      <div class="topbar-copy">
+        <span class="eyebrow">OBJ 360 查看</span>
+        <h1>个人专属三维脸谱模型</h1>
+        <p>基于 3DDFA-V3 重建的个人脸型 OBJ，叠加当前脸谱 UV 贴图，用舞台聚光呈现最终可旋转模型。</p>
+      </div>
+      <nav class="topbar-actions" aria-label="页面导航">
+        <button class="nav-button primary" id="galleryBtn" type="button">返回舞台</button>
+      </nav>
+    </header>
+
+    <section class="viewer-layout">
+      <div class="viewer-stage">
+        <div id="modelStage"></div>
+        <div class="stage-vignette"></div>
+        <div class="model-hud">
+          <span class="hud-chip"><strong id="meshCount">OBJ</strong><span>三维网格</span></span>
+          <span class="hud-chip"><strong id="textureState">UV</strong><span>脸谱贴图</span></span>
+        </div>
+        <div class="status-layer is-hidden" id="statusLayer">
+          <div class="status-card">
+            <h2 id="statusTitle">模型未就绪</h2>
+            <p id="statusText">没有读取到可用 OBJ 或贴图资源时，这里会显示错误提示。</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="info-panel">
+        <div class="face-preview">
+          <div class="face-preview-frame">
+            <img id="faceImage" alt="当前脸谱贴图预览" />
+          </div>
+          <div class="face-title">
+            <h2 id="faceTitle">脸谱模型</h2>
+            <span class="face-role" id="faceRole">个人模型</span>
+          </div>
+        </div>
+
+        <div class="copy-block">
+          <p id="modelIntro">该模型将个人三维人脸网格与传统脸谱纹样对齐，保留脸型轮廓、鼻梁和颧面起伏，再用贴图呈现戏曲脸谱的色块与线条。</p>
+          <p id="faceStory">模型会优先使用本次生成保存的 personal_face.obj；如果当前会话没有新的 OBJ，则展示项目内置的个人模型样例。</p>
+        </div>
+
+        <section class="experienced-panel" aria-labelledby="experiencedTitle">
+          <div class="experienced-head">
+            <div>
+              <h3 id="experiencedTitle">已体验脸谱</h3>
+              <p id="experiencedHint">切换刚才实时互动中佩戴过的三维重建模型。</p>
+            </div>
+            <span class="experienced-count" id="experiencedCount">01</span>
+          </div>
+          <div class="experienced-list" id="experiencedList"></div>
+        </section>
+
+        <div class="model-meta-sink" hidden>
+          <span id="objSpec">personal_face.obj</span>
+          <span id="textureSpec">face texture</span>
+          <span id="sourceSpec">3DDFA-V3</span>
+          <span id="statusSpec">ready</span>
+          <span id="assetProfileSpec">multiview-facepaint-mask-v1</span>
+          <span id="captureSpec">等待 manifest</span>
+          <span id="normalSpec">等待法线图</span>
+          <span id="manifestSpec">本地会话</span>
+        </div>
+
+        <div class="tool-row">
+          <button class="tool-button active" id="rotateBtn" type="button">暂停旋转</button>
+          <button class="tool-button" id="resetBtn" type="button">重置视角</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="/legacy/face_knowledge_data.js"></script>
+  <script>
+    (function () {
+      const STORAGE_KEY = 'personalModelViewerPayload:v1';
+      const EXPERIENCED_MASKS_STORAGE_KEY = 'aiOperaExperiencedMasks:v1';
+      const DEFAULT_OBJ_URL = '/generated_masks/autodl_user_001/personal_face.obj';
+      const OBJ_CACHE_NAME = 'ai-opera-obj-cache-v1';
+
+      const stage = document.getElementById('modelStage');
+      const statusLayer = document.getElementById('statusLayer');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusText = document.getElementById('statusText');
+      const faceImage = document.getElementById('faceImage');
+      const faceTitle = document.getElementById('faceTitle');
+      const faceRole = document.getElementById('faceRole');
+      const faceStory = document.getElementById('faceStory');
+      const objSpec = document.getElementById('objSpec');
+      const textureSpec = document.getElementById('textureSpec');
+      const sourceSpec = document.getElementById('sourceSpec');
+      const statusSpec = document.getElementById('statusSpec');
+      const assetProfileSpec = document.getElementById('assetProfileSpec');
+      const captureSpec = document.getElementById('captureSpec');
+      const normalSpec = document.getElementById('normalSpec');
+      const manifestSpec = document.getElementById('manifestSpec');
+      const experiencedList = document.getElementById('experiencedList');
+      const experiencedCount = document.getElementById('experiencedCount');
+      const meshCount = document.getElementById('meshCount');
+      const textureState = document.getElementById('textureState');
+      const rotateBtn = document.getElementById('rotateBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const galleryBtn = document.getElementById('galleryBtn');
+
+      window.__xiaopuGetContext = () => ({
+        currentFaceKey: activeFaceKey || new URLSearchParams(window.location.search).get('face') || 'guanyu',
+        faceTitle: faceTitle?.textContent || '',
+        faceMeta: faceRole?.textContent || '个人三维脸谱模型',
+        extra: {
+          modelStatus: statusTitle?.textContent || '',
+          textureState: textureState?.textContent || '',
+          meshCount: meshCount?.textContent || '',
+        },
+      });
+
+      let renderer = null;
+      let scene = null;
+      let camera = null;
+      let controls = null;
+      let modelGroup = null;
+      let animationId = 0;
+      let autoRotate = true;
+      let initialCameraPosition = null;
+
+      function readPayload() {
+        try {
+          const raw = sessionStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function readStoredExperiencedMasks() {
+        try {
+          const raw = localStorage.getItem(EXPERIENCED_MASKS_STORAGE_KEY)
+            || sessionStorage.getItem(EXPERIENCED_MASKS_STORAGE_KEY);
+          const parsed = raw ? JSON.parse(raw) : [];
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          return [];
+        }
+      }
+
+      const payload = readPayload();
+      const params = new URLSearchParams(window.location.search);
+      const requestedFace = params.get('face') || payload.faceKey || payload.faceTitle || 'guanyu';
+      const faceKey = window.resolveFaceKnowledgeKey ? window.resolveFaceKnowledgeKey(requestedFace) : requestedFace;
+      const face = (window.FaceKnowledgeData && window.FaceKnowledgeData[faceKey]) || window.FaceKnowledgeData?.guanyu || {};
+      const objUrl = params.get('obj') || payload.objUrl || DEFAULT_OBJ_URL;
+      const rawTexturePath = params.get('texture') || payload.texturePath || face.image || 'faces/关羽.png';
+      const texturePath = resolveTexturePath(rawTexturePath, faceKey, face);
+      const legacyMode = params.get('mode') || payload.mode || 'lite';
+      const sourceLabel = payload.source || 'painted-personal-face-obj';
+      const manifestUrl = params.get('manifest') || payload.manifestUrl || '';
+      const normalMapUrl = payload.normalMapUrl || '';
+
+      let activeMask = null;
+      let activeFaceKey = faceKey;
+      let activeFace = face;
+      let activeObjUrl = objUrl;
+      let activeTexturePath = texturePath;
+      let activeSourceLabel = sourceLabel;
+      let activeManifestUrl = manifestUrl;
+      let activeCaptureManifest = payload.captureManifest || null;
+      let activeNormalMapUrl = normalMapUrl;
+      let activeAssetManifest = payload.assetManifest || null;
+      let activeTexture = null;
+      let activeNormalTexture = null;
+      let activeMaskIndex = 0;
+      let experiencedMasks = [];
+
+      function shortPath(value) {
+        const text = String(value || '');
+        return text.split('/').filter(Boolean).slice(-2).join('/') || text || 'unknown';
+      }
+
+      function setStatus(title, text, visible = true) {
+        statusTitle.textContent = title;
+        statusText.textContent = text;
+        statusSpec.textContent = title;
+        statusLayer.classList.toggle('is-hidden', !visible);
+      }
+
+      function resolveUrl(value) {
+        try {
+          return new URL(value, window.location.href).href;
+        } catch (error) {
+          return value;
+        }
+      }
+
+      function resolveLegacyAsset(value) {
+        const text = String(value || '');
+        if (!text || /^(https?:|data:|blob:|\/)/i.test(text)) return text;
+        return `/legacy/${text.replace(/^\.?\//, '')}`;
+      }
+
+      function hasImageExtension(value) {
+        return /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(String(value || ''));
+      }
+
+      function uniqueValues(values) {
+        return Array.from(new Set(values.filter(Boolean).map((value) => String(value))));
+      }
+
+      function resolveTexturePath(value, preferredKey, preferredFace) {
+        const text = String(value || '').trim();
+        const resolvedKey = window.resolveFaceKnowledgeKey
+          ? window.resolveFaceKnowledgeKey(text || preferredKey || preferredFace?.title || 'guanyu')
+          : (preferredKey || 'guanyu');
+        const resolvedFace = window.FaceKnowledgeData?.[resolvedKey] || preferredFace || face || {};
+
+        if (!text || !hasImageExtension(text)) {
+          return resolvedFace.image || preferredFace?.image || 'faces/关羽.png';
+        }
+
+        return text;
+      }
+
+      function getTextureCandidates(value) {
+        const resolved = resolveTexturePath(value, activeFaceKey, activeFace);
+        return uniqueValues([
+          resolved,
+          activeFace?.image,
+          window.FaceKnowledgeData?.guanyu?.image,
+          'faces/关羽.png',
+        ]);
+      }
+
+      function getFaceData(value) {
+        const key = window.resolveFaceKnowledgeKey
+          ? window.resolveFaceKnowledgeKey(value || 'guanyu')
+          : String(value || 'guanyu').replace(/\.(png|jpg|jpeg|webp)$/i, '');
+        return {
+          faceKey: key,
+          face: window.FaceKnowledgeData?.[key] || null,
+        };
+      }
+
+      function createExperiencedMask(input = {}) {
+        const rawKey = input.faceKey || input.textureKey || input.faceTitle || input.title || input.texturePath || faceKey;
+        const data = getFaceData(rawKey);
+        const currentFace = input.face || data.face || face || {};
+        const nextTexturePath = resolveTexturePath(input.texturePath || currentFace.image, data.faceKey, currentFace);
+        return {
+          faceKey: data.faceKey,
+          face: currentFace,
+          faceTitle: input.faceTitle || input.title || currentFace.title || '脸谱模型',
+          role: input.role || currentFace.role || '个人模型',
+          objUrl: input.objUrl || objUrl || DEFAULT_OBJ_URL,
+          texturePath: nextTexturePath,
+          source: input.source || sourceLabel,
+          manifestUrl: input.manifestUrl || '',
+          captureManifest: input.captureManifest || null,
+          normalMapUrl: input.normalMapUrl || '',
+          assetManifest: input.assetManifest || null,
+          timestamp: Number(input.timestamp || Date.now()),
+        };
+      }
+
+      function getExperiencedMasks() {
+        const byKey = new Map();
+        const addMask = (entry) => {
+          const mask = createExperiencedMask(entry);
+          const key = `${mask.faceKey}|${mask.texturePath}`;
+          const existing = byKey.get(key);
+          byKey.set(key, {
+            ...(existing || {}),
+            ...mask,
+            timestamp: Math.max(Number(existing?.timestamp || 0), Number(mask.timestamp || Date.now())),
+          });
+        };
+
+        readStoredExperiencedMasks().forEach(addMask);
+
+        if (Array.isArray(payload.experiencedFaces)) {
+          payload.experiencedFaces.forEach(addMask);
+        }
+
+        addMask({
+          faceKey,
+          faceTitle: payload.faceTitle || face.title,
+          role: payload.role || face.role,
+          objUrl,
+          texturePath,
+          source: sourceLabel,
+          manifestUrl,
+          captureManifest: payload.captureManifest || null,
+          normalMapUrl,
+          assetManifest: payload.assetManifest || null,
+          timestamp: payload.timestamp || Date.now(),
+        });
+
+        return Array.from(byKey.values()).sort((a, b) => a.timestamp - b.timestamp);
+      }
+
+      function applyMaskState(mask) {
+        if (!mask) return;
+        activeMask = mask;
+        activeFaceKey = mask.faceKey || faceKey;
+        activeFace = mask.face || window.FaceKnowledgeData?.[activeFaceKey] || face || {};
+        activeObjUrl = mask.objUrl || objUrl || DEFAULT_OBJ_URL;
+        activeTexturePath = resolveTexturePath(mask.texturePath, activeFaceKey, activeFace);
+        activeSourceLabel = mask.source || sourceLabel;
+        activeManifestUrl = mask.manifestUrl || '';
+        activeCaptureManifest = mask.captureManifest || null;
+        activeNormalMapUrl = mask.normalMapUrl || '';
+        activeAssetManifest = mask.assetManifest || null;
+      }
+
+      function renderExperiencedMasks() {
+        if (!experiencedList) return;
+        experiencedList.innerHTML = '';
+        if (experiencedCount) {
+          experiencedCount.textContent = String(Math.max(experiencedMasks.length, 1)).padStart(2, '0');
+        }
+
+        if (!experiencedMasks.length) {
+          const empty = document.createElement('div');
+          empty.className = 'experienced-empty';
+          empty.textContent = '启动实时互动并佩戴不同脸谱后，这里会形成可切换合集。';
+          experiencedList.appendChild(empty);
+          return;
+        }
+
+        experiencedMasks.forEach((mask, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = `experienced-mask-item${index === activeMaskIndex ? ' is-active' : ''}`;
+          button.setAttribute('aria-pressed', index === activeMaskIndex ? 'true' : 'false');
+          button.dataset.maskIndex = String(index);
+
+          const thumb = document.createElement('span');
+          thumb.className = 'experienced-mask-thumb';
+          const image = document.createElement('img');
+          image.src = resolveLegacyAsset(mask.texturePath);
+          image.alt = `${mask.faceTitle}脸谱贴图`;
+          thumb.appendChild(image);
+
+          const copy = document.createElement('span');
+          copy.className = 'experienced-mask-copy';
+          const name = document.createElement('span');
+          name.className = 'experienced-mask-name';
+          name.textContent = mask.faceTitle || '脸谱模型';
+          const role = document.createElement('span');
+          role.className = 'experienced-mask-role';
+          role.textContent = mask.role || '三维重建模型';
+          copy.appendChild(name);
+          copy.appendChild(role);
+
+          button.appendChild(thumb);
+          button.appendChild(copy);
+          button.addEventListener('click', () => selectExperiencedMask(index));
+          experiencedList.appendChild(button);
+        });
+      }
+
+      function initExperiencedMasks() {
+        experiencedMasks = getExperiencedMasks();
+        activeMaskIndex = Math.max(0, experiencedMasks.findIndex((mask) =>
+          mask.faceKey === faceKey && mask.texturePath === texturePath
+        ));
+        applyMaskState(experiencedMasks[activeMaskIndex] || createExperiencedMask({
+          faceKey,
+          faceTitle: payload.faceTitle || face.title,
+          role: payload.role || face.role,
+          objUrl,
+          texturePath,
+          source: sourceLabel,
+          timestamp: payload.timestamp || Date.now(),
+        }));
+        renderExperiencedMasks();
+      }
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.crossOrigin = 'anonymous';
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('texture load failed'));
+          image.src = resolveUrl(resolveLegacyAsset(src));
+        });
+      }
+
+      async function loadFacepaintImage(src) {
+        let lastError = null;
+        const candidates = getTextureCandidates(src);
+        for (const candidate of candidates) {
+          try {
+            const image = await loadImage(candidate);
+            textureSpec.textContent = shortPath(candidate);
+            faceImage.src = resolveLegacyAsset(candidate);
+            return image;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError || new Error('texture load failed');
+      }
+
+      async function readCachedObjText(url) {
+        if (!window.caches || !url) return null;
+        try {
+          const resolvedUrl = resolveUrl(url);
+          const cache = await window.caches.open(OBJ_CACHE_NAME);
+          const cached = await cache.match(resolvedUrl);
+          if (!cached?.ok) return null;
+          const text = await cached.text();
+          return looksLikeObjText(text) ? text : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async function fetchText(url) {
+        const cachedText = await readCachedObjText(url);
+        if (cachedText) return cachedText;
+
+        const resolvedUrl = resolveUrl(url);
+        const response = await fetch(resolvedUrl, { cache: 'force-cache' });
+        if (!response.ok) {
+          throw new Error(`OBJ fetch failed: ${response.status}`);
+        }
+        const responseForCache = response.clone();
+        const text = await response.text();
+        if (looksLikeObjText(text) && window.caches) {
+          try {
+            const cache = await window.caches.open(OBJ_CACHE_NAME);
+            await cache.put(resolvedUrl, responseForCache);
+          } catch (error) {
+            // Cache Storage is only an acceleration path.
+          }
+        }
+        return text;
+      }
+
+      async function fetchJson(url) {
+        const response = await fetch(resolveUrl(url), { cache: 'no-store' });
+        if (!response.ok) throw new Error(`manifest fetch failed: ${response.status}`);
+        return response.json();
+      }
+
+      function renderAssetEvidence() {
+        const manifest = activeAssetManifest || {};
+        const capture = manifest.capture || activeCaptureManifest || {};
+        const selected = Number(capture.selectedFrameCount || 0);
+        const input = Number(capture.inputFrameCount || 0);
+        const coverage = Array.isArray(capture.poseCoverage) ? capture.poseCoverage.join(' / ') : '';
+        const profile = manifest.profile || payload.reconstructionProfile || 'multiview-facepaint-mask-v1';
+        const source = manifest.source || activeSourceLabel || '3ddfa-v3';
+        const resolvedNormal = manifest.normalMapUrl || activeNormalMapUrl || '';
+
+        assetProfileSpec.textContent = `${profile} · ${source}`;
+        captureSpec.textContent = selected
+          ? `${input || selected} 帧输入 -> ${selected} 帧入选${coverage ? ` · ${coverage}` : ''}`
+          : '未读取到多视角筛选记录';
+        normalSpec.textContent = resolvedNormal ? `detail normal · ${shortPath(resolvedNormal)}` : '当前预览未绑定法线图';
+        manifestSpec.textContent = activeManifestUrl ? shortPath(activeManifestUrl) : '本地会话';
+      }
+
+      async function loadActiveAssetManifest() {
+        activeAssetManifest = activeMask?.assetManifest || activeAssetManifest || null;
+        if (!activeManifestUrl) {
+          renderAssetEvidence();
+          return null;
+        }
+        try {
+          const manifest = await fetchJson(activeManifestUrl);
+          activeAssetManifest = manifest;
+          activeCaptureManifest = manifest.capture || activeCaptureManifest;
+          activeNormalMapUrl = manifest.normalMapUrl || activeNormalMapUrl;
+          renderAssetEvidence();
+          return manifest;
+        } catch (error) {
+          renderAssetEvidence();
+          return null;
+        }
+      }
+
+      function loadNormalTexture(src) {
+        return new Promise((resolve) => {
+          const normalUrl = String(src || '').trim();
+          if (!normalUrl || !window.THREE?.TextureLoader) {
+            resolve(null);
+            return;
+          }
+          const loader = new THREE.TextureLoader();
+          loader.setCrossOrigin('anonymous');
+          loader.load(resolveUrl(normalUrl), (texture) => {
+            texture.flipY = false;
+            texture.needsUpdate = true;
+            resolve(texture);
+          }, undefined, () => resolve(null));
+        });
+      }
+
+      function looksLikeObjText(text) {
+        const content = String(text || '');
+        return /^\s*v\s+/m.test(content) && /^\s*f\s+/m.test(content);
+      }
+
+      async function fetchObjTextWithFallback(primaryUrl) {
+        const primary = primaryUrl || DEFAULT_OBJ_URL;
+        const candidates = uniqueValues([
+          primary,
+          DEFAULT_OBJ_URL,
+          primary.startsWith('/generated_masks/') ? `/public${primary}` : '',
+          DEFAULT_OBJ_URL.startsWith('/generated_masks/') ? `/public${DEFAULT_OBJ_URL}` : '',
+        ]);
+
+        let lastError = null;
+        for (const candidate of candidates) {
+          try {
+            const text = await fetchText(candidate);
+            if (!looksLikeObjText(text)) {
+              throw new Error('response is not a usable OBJ');
+            }
+            return { text, url: candidate };
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        throw lastError || new Error('OBJ fetch failed');
+      }
+
+      function resolveObjIndex(value, size) {
+        const index = Number.parseInt(value, 10);
+        if (!Number.isFinite(index) || index === 0) return -1;
+        return index < 0 ? size + index : index - 1;
+      }
+
+      function parseOBJ(objText) {
+        const vertices = [];
+        const uvs = [];
+        const faces = [];
+        const lines = String(objText || '').split(/\r?\n/);
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line || line.startsWith('#')) continue;
+
+          const parts = line.split(/\s+/);
+          if (parts[0] === 'v' && parts.length >= 4) {
+            vertices.push([
+              Number.parseFloat(parts[1]),
+              Number.parseFloat(parts[2]),
+              Number.parseFloat(parts[3]),
+            ]);
+          } else if (parts[0] === 'vt' && parts.length >= 3) {
+            uvs.push([
+              Number.parseFloat(parts[1]),
+              Number.parseFloat(parts[2]),
+            ]);
+          } else if (parts[0] === 'f' && parts.length >= 4) {
+            const tokens = parts.slice(1).map((token) => {
+              const tokenParts = token.split('/');
+              return {
+                v: resolveObjIndex(tokenParts[0], vertices.length),
+                vt: tokenParts[1] ? resolveObjIndex(tokenParts[1], uvs.length) : -1,
+              };
+            }).filter((token) => token.v >= 0 && token.v < vertices.length);
+
+            for (let i = 1; i < tokens.length - 1; i += 1) {
+              faces.push([tokens[0], tokens[i], tokens[i + 1]]);
+            }
+          }
+        }
+
+        if (!vertices.length || !faces.length) {
+          throw new Error('OBJ has no usable vertices or faces');
+        }
+
+        return { vertices, uvs, faces };
+      }
+
+      function buildGeometryFromOBJ(parsed) {
+        const { vertices, uvs, faces } = parsed;
+        const mins = [Infinity, Infinity, Infinity];
+        const maxs = [-Infinity, -Infinity, -Infinity];
+
+        for (const vertex of vertices) {
+          for (let axis = 0; axis < 3; axis += 1) {
+            mins[axis] = Math.min(mins[axis], vertex[axis]);
+            maxs[axis] = Math.max(maxs[axis], vertex[axis]);
+          }
+        }
+
+        const center = [
+          (mins[0] + maxs[0]) * 0.5,
+          (mins[1] + maxs[1]) * 0.5,
+          (mins[2] + maxs[2]) * 0.5,
+        ];
+        const width = Math.max(maxs[0] - mins[0], 1e-6);
+        const height = Math.max(maxs[1] - mins[1], 1e-6);
+        const depth = Math.max(maxs[2] - mins[2], 1e-6);
+        const scaleBase = Math.max(width, height, depth, 1e-6);
+        const canUseIndexedGeometry = vertices.length <= 65535 && faces.every((faceTokens) =>
+          faceTokens.every((token) => token.vt < 0 || token.vt === token.v)
+        );
+
+        if (canUseIndexedGeometry) {
+          const positions = new Float32Array(vertices.length * 3);
+          const uvArray = new Float32Array(vertices.length * 2);
+          for (let i = 0; i < vertices.length; i += 1) {
+            const vertex = vertices[i];
+            positions[i * 3] = (vertex[0] - center[0]) / scaleBase;
+            positions[i * 3 + 1] = (vertex[1] - center[1]) / scaleBase;
+            positions[i * 3 + 2] = (vertex[2] - center[2]) / scaleBase;
+
+            if (i < uvs.length) {
+              const uv = uvs[i];
+              uvArray[i * 2] = uv[0];
+              uvArray[i * 2 + 1] = 1.0 - uv[1];
+            } else {
+              uvArray[i * 2] = (vertex[0] - mins[0]) / width;
+              uvArray[i * 2 + 1] = 1.0 - ((vertex[1] - mins[1]) / height);
+            }
+          }
+
+          const indices = new Uint16Array(faces.length * 3);
+          let indexOffset = 0;
+          for (const faceTokens of faces) {
+            for (const token of faceTokens) {
+              indices[indexOffset++] = token.v;
+            }
+          }
+
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+          geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+          geometry.computeVertexNormals();
+          geometry.userData = { originalVertexCount: vertices.length, faceCount: faces.length, width, height, depth };
+          return geometry;
+        }
+
+        const positions = new Float32Array(faces.length * 9);
+        const uvArray = new Float32Array(faces.length * 6);
+        let positionOffset = 0;
+        let uvOffset = 0;
+
+        for (const faceTokens of faces) {
+          for (const token of faceTokens) {
+            const vertex = vertices[token.v];
+            positions[positionOffset++] = (vertex[0] - center[0]) / scaleBase;
+            positions[positionOffset++] = (vertex[1] - center[1]) / scaleBase;
+            positions[positionOffset++] = (vertex[2] - center[2]) / scaleBase;
+
+            if (token.vt >= 0 && token.vt < uvs.length) {
+              const uv = uvs[token.vt];
+              uvArray[uvOffset++] = uv[0];
+              uvArray[uvOffset++] = 1.0 - uv[1];
+            } else {
+              uvArray[uvOffset++] = (vertex[0] - mins[0]) / width;
+              uvArray[uvOffset++] = 1.0 - ((vertex[1] - mins[1]) / height);
+            }
+          }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+        geometry.computeVertexNormals();
+        geometry.userData = { originalVertexCount: vertices.length, faceCount: faces.length, width, height, depth };
+        return geometry;
+      }
+
+      function createAlignedFacepaintTexture(image) {
+        const size = 1024;
+        const fit = { scaleX: 1.16, scaleY: 1.06, offsetX: 0, offsetY: -0.095 };
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx || !image) return null;
+
+        const baseScale = Math.min(size / image.width, size / image.height);
+        const width = image.width * baseScale * fit.scaleX;
+        const height = image.height * baseScale * fit.scaleY;
+        const x = (size - width) * 0.5 + size * fit.offsetX;
+        const y = (size - height) * 0.5 + size * fit.offsetY;
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(image, x, y, width, height);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.flipY = false;
+        texture.encoding = THREE.sRGBEncoding;
+        texture.needsUpdate = true;
+        return texture;
+      }
+
+      function applyTextureToModel(texture, normalTexture = null) {
+        if (!texture || !modelGroup) return;
+        const previousTexture = activeTexture;
+        const previousNormalTexture = activeNormalTexture;
+        modelGroup.traverse((child) => {
+          if (!child?.isMesh || !child.material) return;
+          if (child.material.side !== THREE.FrontSide) return;
+          child.material.map = texture;
+          child.material.normalMap = normalTexture || null;
+          if (normalTexture && window.THREE?.Vector2) {
+            child.material.normalScale = new THREE.Vector2(0.18, 0.18);
+          }
+          child.material.needsUpdate = true;
+        });
+        activeTexture = texture;
+        activeNormalTexture = normalTexture || null;
+        if (previousTexture && previousTexture !== texture && typeof previousTexture.dispose === 'function') {
+          previousTexture.dispose();
+        }
+        if (
+          previousNormalTexture
+          && previousNormalTexture !== normalTexture
+          && typeof previousNormalTexture.dispose === 'function'
+        ) {
+          previousNormalTexture.dispose();
+        }
+      }
+
+      async function selectExperiencedMask(index) {
+        const mask = experiencedMasks[index];
+        if (!mask || index === activeMaskIndex) return;
+        activeMaskIndex = index;
+        applyMaskState(mask);
+        renderExperiencedMasks();
+        updateIntro();
+        renderAssetEvidence();
+
+        if (!modelGroup) return;
+
+        try {
+          textureState.textContent = 'UV';
+          await loadActiveAssetManifest();
+          const [image, normalTexture] = await Promise.all([
+            loadFacepaintImage(activeTexturePath),
+            loadNormalTexture(activeNormalMapUrl),
+          ]);
+          const texture = createAlignedFacepaintTexture(image);
+          if (!texture) throw new Error('texture create failed');
+          applyTextureToModel(texture, normalTexture);
+          textureState.textContent = '已贴图';
+          setStatus('模型已切换', '已切换到所选脸谱的三维重建模型。', false);
+        } catch (error) {
+          console.error(error);
+          textureState.textContent = 'ERROR';
+          setStatus('贴图切换失败', '没有读取到该脸谱贴图，请回到体验馆重新佩戴并生成。');
+        }
+      }
+
+      function fitObjectToCamera(object) {
+        const box = new THREE.Box3().setFromObject(object);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
+        object.position.sub(center);
+
+        const maxSize = Math.max(size.x, size.y, size.z, 1);
+        const dist = maxSize * 2.35;
+        camera.position.set(0, maxSize * 0.08, dist);
+        initialCameraPosition = camera.position.clone();
+        camera.near = dist / 100;
+        camera.far = dist * 100;
+        camera.updateProjectionMatrix();
+        controls.target.set(0, 0, 0);
+        controls.update();
+      }
+
+      function createScene(geometry, texture, normalTexture = null) {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(38, 1, 0.01, 50);
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        stage.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.enablePan = false;
+        controls.minDistance = 1.05;
+        controls.maxDistance = 4.6;
+        controls.autoRotate = autoRotate;
+        controls.autoRotateSpeed = 0.85;
+
+        const frontMaterial = new THREE.MeshStandardMaterial({
+          map: texture,
+          normalMap: normalTexture || null,
+          normalScale: new THREE.Vector2(0.18, 0.18),
+          transparent: true,
+          alphaTest: 0.05,
+          side: THREE.FrontSide,
+          roughness: 0.64,
+          metalness: 0.05,
+        });
+        const backMaterial = new THREE.MeshStandardMaterial({
+          color: 0xf2e8d5,
+          side: THREE.BackSide,
+          roughness: 0.9,
+          metalness: 0,
+        });
+
+        const backMesh = new THREE.Mesh(geometry, backMaterial);
+        const frontMesh = new THREE.Mesh(geometry, frontMaterial);
+        backMesh.castShadow = true;
+        frontMesh.castShadow = true;
+
+        modelGroup = new THREE.Group();
+        modelGroup.add(backMesh);
+        modelGroup.add(frontMesh);
+        modelGroup.rotation.x = -0.035;
+        scene.add(modelGroup);
+
+        const floor = new THREE.Mesh(
+          new THREE.CircleGeometry(0.68, 80),
+          new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.22 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.53;
+        floor.position.z = 0.03;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        scene.add(new THREE.AmbientLight(0xf5ead7, 0.46));
+        const hemi = new THREE.HemisphereLight(0x9beeff, 0x331006, 0.36);
+        scene.add(hemi);
+
+        const key = new THREE.SpotLight(0xffe1a6, 1.9, 5.4, Math.PI / 7.5, 0.42, 1.15);
+        key.position.set(0.2, 1.35, 2.25);
+        key.target.position.set(0, -0.06, 0);
+        key.castShadow = true;
+        key.shadow.mapSize.width = 1024;
+        key.shadow.mapSize.height = 1024;
+        scene.add(key);
+        scene.add(key.target);
+
+        const fill = new THREE.DirectionalLight(0x7fe5ff, 0.42);
+        fill.position.set(-1.8, 0.55, 1.2);
+        scene.add(fill);
+
+        const rim = new THREE.DirectionalLight(0xfff4d6, 0.28);
+        rim.position.set(1.6, 0.4, -1.4);
+        scene.add(rim);
+
+        activeTexture = texture;
+        activeNormalTexture = normalTexture || null;
+        fitObjectToCamera(modelGroup);
+        resizeRenderer();
+        animate();
+      }
+
+      function resizeRenderer() {
+        if (!renderer || !camera) return;
+        const rect = stage.getBoundingClientRect();
+        const width = Math.max(1, rect.width);
+        const height = Math.max(1, rect.height);
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      }
+
+      function animate() {
+        animationId = requestAnimationFrame(animate);
+        if (controls) {
+          controls.autoRotate = autoRotate;
+          controls.update();
+        }
+        if (renderer && scene && camera) {
+          renderer.render(scene, camera);
+        }
+      }
+
+      function updateIntro() {
+        const title = activeMask?.faceTitle || activeFace.title || payload.faceTitle || face.title || '脸谱模型';
+        const role = activeMask?.role || activeFace.role || payload.role || face.role || '个人模型';
+        const story = Array.isArray(activeFace.story) ? activeFace.story[0] : '';
+        document.title = `${title} · 个人专属三维脸谱模型`;
+        faceImage.src = resolveLegacyAsset(activeTexturePath);
+        faceTitle.textContent = title;
+        faceRole.textContent = role;
+        faceStory.textContent = story || '当前脸谱贴图将与个人 OBJ 的 UV 坐标对齐，形成可旋转查看的三维脸谱模型。';
+        objSpec.textContent = shortPath(activeObjUrl || DEFAULT_OBJ_URL);
+        textureSpec.textContent = shortPath(activeTexturePath);
+        sourceSpec.textContent = activeSourceLabel;
+        renderAssetEvidence();
+      }
+
+      function installEvents() {
+        window.addEventListener('resize', resizeRenderer);
+        if (window.ResizeObserver) {
+          const observer = new ResizeObserver(resizeRenderer);
+          observer.observe(stage);
+        }
+
+        rotateBtn.addEventListener('click', () => {
+          autoRotate = !autoRotate;
+          rotateBtn.classList.toggle('active', autoRotate);
+          rotateBtn.textContent = autoRotate ? '暂停旋转' : '恢复旋转';
+        });
+
+        resetBtn.addEventListener('click', () => {
+          if (!camera || !controls || !initialCameraPosition) return;
+          camera.position.copy(initialCameraPosition);
+          controls.target.set(0, 0, 0);
+          controls.update();
+        });
+
+        galleryBtn.addEventListener('click', () => {
+          window.location.href = `/stage.html?mode=${encodeURIComponent(legacyMode)}&entry=portal`;
+        });
+
+        window.addEventListener('beforeunload', () => {
+          if (animationId) cancelAnimationFrame(animationId);
+          if (controls) controls.dispose();
+          if (activeTexture && typeof activeTexture.dispose === 'function') activeTexture.dispose();
+          if (activeNormalTexture && typeof activeNormalTexture.dispose === 'function') activeNormalTexture.dispose();
+          if (renderer) renderer.dispose();
+        });
+      }
+
+      async function boot() {
+        initExperiencedMasks();
+        updateIntro();
+        installEvents();
+
+        if (!window.THREE || !THREE.OrbitControls) {
+          setStatus('模型组件未加载', '请确认 Three.js 与 OrbitControls 已经成功加载。');
+          return;
+        }
+
+        try {
+          const manifestPromise = loadActiveAssetManifest();
+          const objPromise = fetchObjTextWithFallback(activeObjUrl || DEFAULT_OBJ_URL);
+          const imagePromise = loadFacepaintImage(activeTexturePath);
+          const loadedObj = await objPromise;
+          const objText = loadedObj.text;
+          objSpec.textContent = shortPath(loadedObj.url);
+          await manifestPromise;
+
+          const [geometry, image, normalTexture] = await Promise.all([
+            Promise.resolve(buildGeometryFromOBJ(parseOBJ(objText))),
+            imagePromise,
+            loadNormalTexture(activeNormalMapUrl),
+          ]);
+          const texture = createAlignedFacepaintTexture(image);
+          if (!texture) throw new Error('texture create failed');
+
+          createScene(geometry, texture, normalTexture);
+          const verts = geometry.userData.originalVertexCount || geometry.attributes.position.count;
+          const faces = geometry.userData.faceCount || Math.round(geometry.attributes.position.count / 3);
+          meshCount.textContent = `${Math.round(verts / 100) / 10}K`;
+          textureState.textContent = '已贴图';
+          statusSpec.textContent = `${verts} vertices / ${faces} faces`;
+          setStatus('模型已就绪', '个人专属三维脸谱模型已完成装配。', false);
+        } catch (error) {
+          console.error(error);
+          setStatus('模型读取失败', '没有读取到可用 OBJ 或贴图资源，请回到体验馆重新生成个人专属三维脸谱模型。');
+          textureState.textContent = 'ERROR';
+        }
+      }
+
+      boot();
+    })();
+  </script>
+  <script src="/legacy/xiaopu_floating_agent.js?v=20260529-typing-stream"></script>
+</body>
+</html>

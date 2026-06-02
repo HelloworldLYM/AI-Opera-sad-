@@ -1,0 +1,5008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    const legacyParams = new URLSearchParams(window.location.search);
+    window.__legacyMode = legacyParams.get('mode') === 'full' ? 'full' : 'lite';
+    window.__legacyAutoEnter = legacyParams.get('autoEnter') === '1';
+  </script>
+  <title>手拂过面部检测 - Web演示</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 17px; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    /* ======================== 国风背景层 ======================== */
+
+    /* 1. 主页背景：纯静态图 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('main_poster_3d.png') center center / cover no-repeat, #1a0303;
+      z-index: -3;
+    }
+
+    /* 2. 金黄装饰层 - 已禁用 */
+    body::after { display: none; }
+
+    /* 3. 水波纹特效 - 已禁用 */
+    .ripple-layer, .ripple { display: none !important; }
+
+    /* 4. 流动脸谱效果 */
+    .cloud-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: 0.92;
+      mix-blend-mode: screen;
+    }
+
+    .cloud-layer::before,
+    .cloud-layer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    .cloud-layer::before {
+      background:
+        radial-gradient(circle at 16% 26%, rgba(72, 204, 255, 0.16), transparent 18%),
+        radial-gradient(circle at 74% 24%, rgba(255, 217, 128, 0.12), transparent 16%),
+        radial-gradient(circle at 82% 76%, rgba(205, 34, 51, 0.16), transparent 22%);
+    }
+
+    .cloud-layer::after {
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(127, 229, 255, 0.022) 0,
+          rgba(127, 229, 255, 0.022) 1px,
+          transparent 1px,
+          transparent 92px
+        ),
+        repeating-linear-gradient(
+          180deg,
+          rgba(127, 229, 255, 0.012) 0,
+          rgba(127, 229, 255, 0.012) 1px,
+          transparent 1px,
+          transparent 74px
+        );
+      opacity: 0.48;
+    }
+
+    .signal-sweep,
+    .beam-haze,
+    .hud-orbit,
+    .data-stream,
+    .signal-cluster {
+      position: absolute;
+    }
+
+    .signal-sweep {
+      inset: -12% auto auto -18%;
+      width: 54%;
+      height: 170%;
+      background: linear-gradient(
+        114deg,
+        transparent 18%,
+        rgba(127, 229, 255, 0.06) 42%,
+        rgba(255, 215, 120, 0.12) 50%,
+        transparent 64%
+      );
+      transform: rotate(8deg);
+      animation: sweepAcross 13s ease-in-out infinite;
+    }
+
+    .beam-haze {
+      border-radius: 50%;
+      filter: blur(34px);
+      opacity: 0.34;
+      animation: hazePulse 12s ease-in-out infinite;
+    }
+
+    .beam-a {
+      left: -8%;
+      top: 10%;
+      width: 34vw;
+      height: 34vw;
+      min-width: 220px;
+      min-height: 220px;
+      background: rgba(72, 204, 255, 0.18);
+    }
+
+    .beam-b {
+      right: -10%;
+      bottom: -8%;
+      width: 32vw;
+      height: 32vw;
+      min-width: 220px;
+      min-height: 220px;
+      background: rgba(205, 34, 51, 0.16);
+      animation-delay: -5s;
+    }
+
+    .beam-c {
+      right: 12%;
+      top: 18%;
+      width: 22vw;
+      height: 22vw;
+      min-width: 180px;
+      min-height: 180px;
+      background: rgba(255, 217, 128, 0.14);
+      animation-delay: -8s;
+    }
+
+    .hud-orbit {
+      border-radius: 50%;
+      border: 1px solid rgba(127, 229, 255, 0.22);
+      box-shadow:
+        inset 0 0 34px rgba(127, 229, 255, 0.08),
+        0 0 30px rgba(127, 229, 255, 0.08);
+      animation: orbitPulse 10s ease-in-out infinite;
+    }
+
+    .hud-orbit::before,
+    .hud-orbit::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    .hud-orbit::before {
+      inset: 14%;
+      border: 1px dashed rgba(127, 229, 255, 0.24);
+      animation: orbitSpin 18s linear infinite;
+    }
+
+    .hud-orbit::after {
+      inset: 28%;
+      border: 1px solid rgba(255, 215, 120, 0.2);
+      animation: orbitSpin 12s linear infinite reverse;
+    }
+
+    .orbit-left {
+      left: -110px;
+      top: 18%;
+      width: 380px;
+      height: 380px;
+    }
+
+    .orbit-right {
+      right: 4%;
+      bottom: 8%;
+      width: 280px;
+      height: 280px;
+      animation-delay: -3s;
+    }
+
+    .data-stream {
+      top: -18%;
+      width: 2px;
+      height: 140%;
+      background: linear-gradient(
+        180deg,
+        transparent 0%,
+        rgba(127, 229, 255, 0.06) 14%,
+        rgba(127, 229, 255, 0.72) 48%,
+        transparent 100%
+      );
+      box-shadow: 0 0 18px rgba(127, 229, 255, 0.3);
+      animation: streamFall 12s linear infinite;
+    }
+
+    .data-stream::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: -4%;
+      width: 10px;
+      height: 42px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(127, 229, 255, 0));
+      animation: nodeFall 4s linear infinite;
+    }
+
+    .stream-a {
+      left: 14%;
+      animation-duration: 10s;
+    }
+
+    .stream-a::after {
+      animation-delay: -1.4s;
+    }
+
+    .stream-b {
+      left: 32%;
+      animation-duration: 13s;
+      animation-delay: -4s;
+    }
+
+    .stream-b::after {
+      animation-delay: -2.1s;
+    }
+
+    .stream-c {
+      right: 24%;
+      animation-duration: 11s;
+      animation-delay: -6s;
+    }
+
+    .stream-c::after {
+      animation-delay: -0.8s;
+    }
+
+    .stream-d {
+      right: 10%;
+      animation-duration: 15s;
+      animation-delay: -9s;
+    }
+
+    .stream-d::after {
+      animation-delay: -3s;
+    }
+
+    .signal-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid rgba(127, 229, 255, 0.12);
+      border-radius: 999px;
+      background: rgba(5, 10, 18, 0.22);
+      backdrop-filter: blur(6px);
+      animation: clusterDrift 18s ease-in-out infinite;
+    }
+
+    .signal-cluster span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(127, 229, 255, 0.94);
+      box-shadow: 0 0 12px rgba(127, 229, 255, 0.7);
+      animation: nodePulse 2.4s ease-in-out infinite;
+    }
+
+    .signal-cluster span:nth-child(2) {
+      animation-delay: 0.18s;
+    }
+
+    .signal-cluster span:nth-child(3) {
+      animation-delay: 0.36s;
+    }
+
+    .signal-cluster span:nth-child(4) {
+      animation-delay: 0.54s;
+    }
+
+    .cluster-left {
+      left: 10%;
+      bottom: 16%;
+    }
+
+    .cluster-right {
+      right: 10%;
+      top: 18%;
+      animation-delay: -6s;
+    }
+
+    @keyframes sweepAcross {
+      0%,
+      100% {
+        transform: translateX(-4%) rotate(8deg);
+        opacity: 0.12;
+      }
+      50% {
+        transform: translateX(94%) rotate(8deg);
+        opacity: 0.36;
+      }
+    }
+
+    @keyframes hazePulse {
+      0%,
+      100% {
+        transform: scale(0.94);
+        opacity: 0.24;
+      }
+      50% {
+        transform: scale(1.08);
+        opacity: 0.42;
+      }
+    }
+
+    @keyframes orbitPulse {
+      0%,
+      100% {
+        opacity: 0.42;
+      }
+      50% {
+        opacity: 0.78;
+      }
+    }
+
+    @keyframes orbitSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes streamFall {
+      from {
+        transform: translateY(-8%);
+      }
+      to {
+        transform: translateY(14%);
+      }
+    }
+
+    @keyframes nodeFall {
+      from {
+        transform: translate(-50%, 0);
+        opacity: 0;
+      }
+      25% {
+        opacity: 1;
+      }
+      to {
+        transform: translate(-50%, 520px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes clusterDrift {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-14px);
+      }
+    }
+
+    @keyframes nodePulse {
+      0%,
+      100% {
+        opacity: 0.36;
+        transform: scale(0.85);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.15);
+      }
+    }
+
+    body.is-lite .cloud-layer {
+      display: none !important;
+    }
+
+    body.is-lite .mask-decoration,
+    body.is-lite .video-container::before,
+    body.is-lite .video-container::after {
+      display: none !important;
+    }
+
+    /* 4. 鎏金细边 - 流动光影 */
+    .chinese-border {
+      position: relative;
+      /* 用 padding 为描边留出 2px 缝隙 */
+      padding: 2px !important;
+      background:
+        linear-gradient(white, white) padding-box,
+        linear-gradient(
+          120deg,
+          #8b6914 0%,
+          #d4af37 12%,
+          #fff4c2 22%,
+          #ffd700 30%,
+          #b8860b 45%,
+          #d4af37 60%,
+          #fff8dc 72%,
+          #ffd700 82%,
+          #8b6914 100%
+        ) border-box;
+      background-size: 100% 100%, 300% 100%;
+      background-repeat: no-repeat;
+      border: 2px solid transparent;
+      border-radius: 22px;
+      box-shadow:
+        0 0 0 1px rgba(139, 105, 20, 0.35),
+        0 0 18px rgba(255, 215, 0, 0.35),
+        0 20px 60px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(255, 248, 220, 0.5);
+      animation: goldFlow 6s linear infinite;
+    }
+
+    @keyframes goldFlow {
+      0%   { background-position: 0% 0%, 0%   50%; }
+      100% { background-position: 0% 0%, 300% 50%; }
+    }
+
+    /* 鎏金高光扫过 */
+    .chinese-border::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 22px;
+      padding: 2px;
+      background: linear-gradient(
+        115deg,
+        transparent 0%,
+        transparent 38%,
+        rgba(255, 255, 255, 0.85) 48%,
+        rgba(255, 248, 220, 0.95) 50%,
+        rgba(255, 255, 255, 0.85) 52%,
+        transparent 62%,
+        transparent 100%
+      );
+      background-size: 250% 100%;
+      background-repeat: no-repeat;
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+      animation: goldShimmer 4.5s ease-in-out infinite;
+    }
+
+    @keyframes goldShimmer {
+      0%        { background-position: -60% 0; opacity: 0.0; }
+      15%       { opacity: 1; }
+      50%       { background-position: 160% 0; opacity: 1; }
+      65%       { opacity: 0.0; }
+      100%      { background-position: 160% 0; opacity: 0.0; }
+    }
+
+    /* 5. 标题金色装饰 */
+    .chinese-title {
+      position: relative;
+      display: inline-block;
+    }
+
+    .chinese-title::before,
+    .chinese-title::after {
+      content: '◆';
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(212, 175, 55, 0.8);
+      font-size: 16px;
+      animation: diamondPulse 2s ease-in-out infinite;
+    }
+
+    .chinese-title::before {
+      left: -25px;
+    }
+
+    .chinese-title::after {
+      right: -25px;
+    }
+
+    @keyframes diamondPulse {
+      0%, 100% { opacity: 0.5; transform: translateY(-50%) scale(1); }
+      50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+    }
+
+    /* ======================== 原有样式 ======================== */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-rendering: optimizeLegibility;
+    }
+    .container {
+      max-width: 860px;
+      width: min(100%, 860px);
+      background:
+        radial-gradient(circle at top, rgba(255, 215, 0, 0.18), transparent 40%),
+        linear-gradient(180deg, rgba(96, 17, 24, 0.78) 0%, rgba(31, 7, 10, 0.92) 100%);
+      border: 1px solid rgba(248, 217, 149, 0.26);
+      border-radius: 28px;
+      box-shadow:
+        0 28px 80px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(18px);
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container.is-running {
+      box-shadow:
+        0 32px 96px rgba(0, 0, 0, 0.46),
+        0 0 32px rgba(212, 175, 55, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+    .title-en {
+      font-size: 72px;
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-weight: 900;
+      background: linear-gradient(135deg, #2a2a2a 0%, #8b7355 30%, #d4af37 50%, #8b7355 70%, #2a2a2a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      display: block;
+      width: 100%;
+    }
+    .title-cn {
+      font-size: 72px;
+      font-family: 'STXingkai', 'KaiTi', 'FangSong', 'Microsoft YaHei', serif;
+      font-weight: bold;
+      background: linear-gradient(135deg, #2a2a2a 0%, #8b7355 30%, #d4af37 50%, #8b7355 70%, #2a2a2a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 16px;
+      white-space: nowrap;
+      display: block;
+      width: 100%;
+    }
+    .subtitle {
+      display: none;
+    }
+    .video-section {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 30px;
+      width: 100%;
+    }
+    .video-container {
+      position: relative;
+      border-radius: 12px;
+      overflow: visible;
+      box-shadow:
+        0 0 0 8px rgba(139, 0, 0, 0.6),
+        0 0 0 12px rgba(218, 165, 32, 0.8),
+        0 0 0 16px rgba(139, 0, 0, 0.6),
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        inset 0 0 20px rgba(218, 165, 32, 0.2);
+      width: 100%;
+      max-width: 640px;
+      background: linear-gradient(135deg, rgba(139, 0, 0, 0.1) 0%, rgba(218, 165, 32, 0.1) 100%);
+      padding: 4px;
+    }
+
+    .video-container::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      left: -30px;
+      right: -30px;
+      bottom: -30px;
+      background:
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M10 10 L30 10 L30 30" stroke="%23DAA520" stroke-width="3" fill="none"/><path d="M70 10 L90 10 L90 30" stroke="%23DAA520" stroke-width="3" fill="none"/><path d="M10 70 L10 90 L30 90" stroke="%23DAA520" stroke-width="3" fill="none"/><path d="M70 90 L90 90 L90 70" stroke="%23DAA520" stroke-width="3" fill="none"/></svg>') no-repeat,
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="3" fill="%23DAA520"/></svg>') no-repeat;
+      background-size: 60px 60px, 20px 20px;
+      background-position:
+        top left, top right, bottom left, bottom right,
+        center;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .video-container::after {
+      content: '';
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 40px;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40"><path d="M20 20 Q40 10 60 20 T100 20 T140 20 T180 20" stroke="%23DAA520" stroke-width="2" fill="none" opacity="0.8"/><path d="M30 25 Q50 15 70 25 T110 25 T150 25 T190 25" stroke="%238B0000" stroke-width="1.5" fill="none" opacity="0.6"/><circle cx="100" cy="20" r="8" fill="%23DAA520" opacity="0.9"/><path d="M95 20 L100 15 L105 20 L100 25 Z" fill="%238B0000"/></svg>') no-repeat center;
+      background-size: contain;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .video-inner {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: black;
+    }
+    .mask-decoration {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100px;
+      height: 140px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 10;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    }
+    .mask-left {
+      left: -120px;
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><defs><linearGradient id="maskGrad1" x1="0%25" y1="0%25" x2="0%25" y2="100%25"><stop offset="0%25" style="stop-color:%238B0000;stop-opacity:1" /><stop offset="50%25" style="stop-color:%23DAA520;stop-opacity:1" /><stop offset="100%25" style="stop-color:%238B0000;stop-opacity:1" /></linearGradient></defs><path d="M50 10 Q30 30 35 50 Q40 70 30 90 Q25 110 40 130 L60 130 Q75 110 70 90 Q60 70 65 50 Q70 30 50 10 Z" fill="url(%23maskGrad1)" opacity="0.9"/><ellipse cx="40" cy="45" rx="8" ry="12" fill="%23FFD700"/><ellipse cx="60" cy="45" rx="8" ry="12" fill="%23FFD700"/><path d="M35 70 Q50 80 65 70" stroke="%23FFD700" stroke-width="3" fill="none"/><circle cx="35" cy="30" r="4" fill="%23FFD700" opacity="0.8"/><circle cx="65" cy="30" r="4" fill="%23FFD700" opacity="0.8"/><path d="M20 20 Q10 40 15 60" stroke="%23DAA520" stroke-width="2" fill="none" opacity="0.7"/><path d="M80 20 Q90 40 85 60" stroke="%23DAA520" stroke-width="2" fill="none" opacity="0.7"/></svg>');
+    }
+    .mask-right {
+      right: -120px;
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><defs><linearGradient id="maskGrad2" x1="0%25" y1="0%25" x2="0%25" y2="100%25"><stop offset="0%25" style="stop-color:%238B0000;stop-opacity:1" /><stop offset="50%25" style="stop-color:%23DAA520;stop-opacity:1" /><stop offset="100%25" style="stop-color:%238B0000;stop-opacity:1" /></linearGradient></defs><path d="M50 10 Q70 30 65 50 Q60 70 70 90 Q75 110 60 130 L40 130 Q25 110 30 90 Q40 70 35 50 Q30 30 50 10 Z" fill="url(%23maskGrad2)" opacity="0.9"/><ellipse cx="40" cy="45" rx="8" ry="12" fill="%23FFD700"/><ellipse cx="60" cy="45" rx="8" ry="12" fill="%23FFD700"/><path d="M35 70 Q50 80 65 70" stroke="%23FFD700" stroke-width="3" fill="none"/><circle cx="35" cy="30" r="4" fill="%23FFD700" opacity="0.8"/><circle cx="65" cy="30" r="4" fill="%23FFD700" opacity="0.8"/><path d="M20 20 Q10 40 15 60" stroke="%23DAA520" stroke-width="2" fill="none" opacity="0.7"/><path d="M80 20 Q90 40 85 60" stroke="%23DAA520" stroke-width="2" fill="none" opacity="0.7"/></svg>');
+    }
+    video {
+      display: block;
+      width: 100%;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .stats-panel {
+      display: none;
+    }
+    .stats-grid {
+      display: none;
+    }
+    .stat-card {
+      display: none;
+    }
+    .learning-card {
+      display: none;
+    }
+    .learning-card .stat-label {
+      display: none;
+    }
+    .learning-card .stat-value {
+      display: none;
+    }
+    .progress-bar {
+      display: none;
+    }
+    .progress-fill {
+      display: none;
+    }
+    .emotion-dots {
+      display: none;
+    }
+    .emotion-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: background 0.3s ease;
+    }
+    .emotion-dot.ready {
+      background: #ffd700;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+    .state-idle { color: #888; }
+    .state-entering { color: #28a745; }
+    .state-crossing { color: #ffc107; }
+    .state-exiting { color: #dc3545; }
+    .state-triggered { color: #6f42c1; }
+    .controls {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    #hiFiMaskBtn {
+      background:
+        linear-gradient(135deg, rgba(30, 93, 145, 0.96), rgba(8, 20, 38, 0.98)),
+        #0b243d;
+      color: #fff2ba;
+      border-color: rgba(127, 229, 255, 0.42);
+      font-weight: 800;
+      letter-spacing: 1px;
+      box-shadow:
+        0 14px 34px rgba(0, 0, 0, 0.28),
+        0 0 24px rgba(80, 188, 255, 0.2),
+        inset 0 1px 0 rgba(255, 244, 194, 0.2);
+    }
+    #hiFiMaskBtn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 230, 163, 0.72);
+      box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.35),
+        0 0 32px rgba(88, 210, 255, 0.32),
+        inset 0 1px 0 rgba(255, 244, 194, 0.26);
+    }
+    #aiGuideBtn {
+      background:
+        linear-gradient(135deg, rgba(92, 24, 150, 0.94), rgba(9, 31, 56, 0.98)),
+        #25103d;
+      color: #fff2ba;
+      border-color: rgba(183, 149, 255, 0.42);
+      font-weight: 800;
+      letter-spacing: 1px;
+      box-shadow:
+        0 14px 34px rgba(0, 0, 0, 0.28),
+        0 0 24px rgba(170, 130, 255, 0.2),
+        inset 0 1px 0 rgba(255, 244, 194, 0.2);
+    }
+    .ai-guide-panel {
+      display: none;
+      width: min(1040px, 100%);
+      margin: 0 auto 22px;
+      padding: 18px;
+      border: 1px solid rgba(183, 149, 255, 0.28);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 14% 10%, rgba(183, 149, 255, 0.2), transparent 30%),
+        radial-gradient(circle at 86% 18%, rgba(127, 229, 255, 0.16), transparent 28%),
+        linear-gradient(145deg, rgba(11, 12, 34, 0.94), rgba(20, 12, 28, 0.88));
+      box-shadow:
+        0 22px 62px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      color: #f7f0d0;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-guide-panel.is-visible {
+      display: grid;
+      gap: 14px;
+    }
+    .ai-guide-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .ai-guide-head h2 {
+      margin: 0;
+      color: #fff3bc;
+      font-family: 'STKaiti','KaiTi','Microsoft YaHei',serif;
+      font-size: 23px;
+      letter-spacing: 3px;
+    }
+    .ai-guide-status {
+      flex: 0 0 auto;
+      max-width: 42%;
+      padding: 7px 12px;
+      border: 1px solid rgba(127, 229, 255, 0.28);
+      border-radius: 999px;
+      background: rgba(10, 34, 58, 0.62);
+      color: #9feeff;
+      font-size: 13px;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ai-guide-messages {
+      display: grid;
+      gap: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .ai-guide-message {
+      padding: 12px 13px;
+      border: 1px solid rgba(255, 230, 163, 0.14);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.045);
+      color: rgba(247, 240, 208, 0.86);
+      font-size: 14px;
+      line-height: 1.72;
+      white-space: pre-wrap;
+    }
+    .ai-guide-message.user {
+      margin-left: min(90px, 16%);
+      border-color: rgba(255, 230, 163, 0.26);
+      background: rgba(255, 230, 163, 0.08);
+      color: #fff4c8;
+    }
+    .ai-guide-message.agent {
+      margin-right: min(90px, 16%);
+      border-color: rgba(127, 229, 255, 0.2);
+      background: rgba(127, 229, 255, 0.065);
+    }
+    .ai-guide-message.report {
+      margin-right: 0;
+      border-color: rgba(255, 230, 163, 0.26);
+      background: rgba(255, 230, 163, 0.065);
+      font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    .ai-guide-meta {
+      display: block;
+      margin-top: 8px;
+      color: rgba(159, 238, 255, 0.72);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .ai-creative-preview {
+      display: none;
+      grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid rgba(255, 230, 163, 0.18);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .ai-creative-preview.is-visible {
+      display: grid;
+    }
+    .ai-creative-preview img {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: contain;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .ai-creative-preview h3 {
+      margin: 0 0 8px;
+      color: #fff3bc;
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+    .ai-creative-preview p {
+      margin: 0 0 8px;
+      color: rgba(247, 240, 208, 0.86);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .ai-palette-row {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 10px;
+    }
+    .ai-palette-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.24);
+    }
+    .ai-guide-quick {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .ai-guide-quick button,
+    .ai-guide-send {
+      min-height: 34px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(127, 229, 255, 0.1);
+      color: #9feeff;
+      border-color: rgba(127, 229, 255, 0.28);
+      font-size: 13px;
+      box-shadow: none;
+    }
+    .ai-guide-compose {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .ai-guide-compose textarea {
+      min-height: 46px;
+      max-height: 120px;
+      resize: vertical;
+      padding: 11px 12px;
+      border: 1px solid rgba(255, 230, 163, 0.18);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.28);
+      color: #fff4c8;
+      font: inherit;
+      line-height: 1.55;
+    }
+    .ai-guide-compose textarea:focus {
+      outline: 2px solid rgba(127, 229, 255, 0.42);
+      outline-offset: 2px;
+    }
+    #gestureDatasetBtn {
+      background:
+        linear-gradient(135deg, rgba(15, 95, 74, 0.94), rgba(8, 30, 44, 0.98)),
+        #0c2c25;
+      color: #e4fff2;
+      border-color: rgba(105, 236, 179, 0.42);
+      font-weight: 800;
+    }
+    .gesture-dataset-panel {
+      display: none;
+      width: min(1040px, 100%);
+      margin: 0 auto 22px;
+      padding: 16px;
+      border: 1px solid rgba(105, 236, 179, 0.24);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(105, 236, 179, 0.16), transparent 28%),
+        linear-gradient(145deg, rgba(5, 30, 28, 0.94), rgba(12, 18, 30, 0.88));
+      color: #f0fff7;
+      box-shadow: 0 20px 58px rgba(0, 0, 0, 0.36);
+    }
+    .gesture-dataset-panel.is-visible {
+      display: grid;
+      gap: 12px;
+    }
+    .gesture-dataset-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .gesture-dataset-head h2 {
+      margin: 0;
+      color: #e9fff4;
+      font-family: 'STKaiti','KaiTi','Microsoft YaHei',serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+    }
+    .gesture-dataset-status {
+      color: rgba(228, 255, 242, 0.72);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .gesture-dataset-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      align-items: center;
+    }
+    .gesture-dataset-controls select {
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid rgba(105, 236, 179, 0.24);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.28);
+      color: #e4fff2;
+    }
+    .gesture-dataset-controls button {
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(105, 236, 179, 0.1);
+      color: #b8ffd8;
+      border-color: rgba(105, 236, 179, 0.3);
+      font-size: 13px;
+      box-shadow: none;
+    }
+    .gesture-dataset-counts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: rgba(228, 255, 242, 0.78);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .gesture-dataset-counts span {
+      padding: 5px 8px;
+      border: 1px solid rgba(105, 236, 179, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .gesture-dataset-counts span.is-ready {
+      border-color: rgba(105, 236, 179, 0.44);
+      color: #cffff0;
+      background: rgba(105, 236, 179, 0.12);
+    }
+    .gesture-dataset-quality {
+      display: grid;
+      gap: 8px;
+      padding: 11px 12px;
+      border: 1px solid rgba(105, 236, 179, 0.16);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.18);
+      color: rgba(228, 255, 242, 0.82);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+    .gesture-dataset-quality strong {
+      color: #d9ffea;
+      font-weight: 800;
+    }
+    .gesture-dataset-quality ul {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      padding-left: 18px;
+    }
+    .gesture-dataset-guide,
+    .gesture-dataset-feedback {
+      padding: 11px 12px;
+      border: 1px solid rgba(105, 236, 179, 0.16);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      color: rgba(228, 255, 242, 0.84);
+      font-size: 12px;
+      line-height: 1.68;
+    }
+    .gesture-dataset-guide strong,
+    .gesture-dataset-feedback strong {
+      color: #d9ffea;
+      font-weight: 800;
+    }
+    .gesture-dataset-guide span {
+      display: block;
+      color: rgba(184, 255, 216, 0.72);
+    }
+    .gesture-dataset-feedback.is-warning {
+      border-color: rgba(255, 207, 118, 0.3);
+      color: #ffe7ad;
+    }
+    .gesture-dataset-feedback.is-success {
+      border-color: rgba(105, 236, 179, 0.42);
+      background: rgba(105, 236, 179, 0.1);
+      color: #d9ffea;
+    }
+    .hifi-mask-panel {
+      display: none;
+      width: min(860px, 100%);
+      margin: 0 auto 22px;
+      padding: 18px;
+      border: 1px solid rgba(127, 229, 255, 0.3);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(127, 229, 255, 0.2), transparent 30%),
+        radial-gradient(circle at 82% 12%, rgba(255, 218, 127, 0.16), transparent 28%),
+        linear-gradient(145deg, rgba(5, 18, 35, 0.94), rgba(16, 24, 38, 0.88));
+      box-shadow:
+        0 22px 62px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      color: #f7f0d0;
+      position: relative;
+      overflow: hidden;
+    }
+    .hifi-mask-panel.is-visible {
+      display: block;
+    }
+    .hifi-mask-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent, rgba(127, 229, 255, 0.08), transparent),
+        repeating-linear-gradient(90deg, rgba(127, 229, 255, 0.05) 0 1px, transparent 1px 68px);
+      opacity: 0.7;
+    }
+    .hifi-mask-header,
+    .hifi-mask-progress,
+    .hifi-mask-steps,
+    .hifi-mask-complete,
+    .hifi-mask-view-btn {
+      position: relative;
+      z-index: 1;
+    }
+    .hifi-mask-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    .hifi-mask-header h2 {
+      margin: 0;
+      color: #fff3bc;
+      font-family: 'STKaiti','KaiTi','Microsoft YaHei',serif;
+      font-size: 24px;
+      letter-spacing: 3px;
+      text-shadow: 0 0 18px rgba(255, 215, 0, 0.28);
+    }
+    .hifi-mask-badge {
+      flex: 0 0 auto;
+      padding: 7px 12px;
+      border: 1px solid rgba(127, 229, 255, 0.34);
+      border-radius: 999px;
+      background: rgba(10, 34, 58, 0.72);
+      color: #8feaff;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+    .hifi-mask-progress {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(127, 229, 255, 0.2);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .hifi-mask-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #51d7ff, #ffe39f);
+      box-shadow: 0 0 20px rgba(127, 229, 255, 0.62);
+      transition: width 0.45s ease;
+    }
+    .hifi-mask-steps {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .hifi-mask-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid rgba(127, 229, 255, 0.14);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      color: rgba(247, 240, 208, 0.68);
+      font-size: 14px;
+      transition:
+        color 0.25s ease,
+        border-color 0.25s ease,
+        background-color 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+    .hifi-mask-step-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(127, 229, 255, 0.36);
+      color: rgba(143, 234, 255, 0.64);
+      font-size: 13px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+    .hifi-mask-step.is-active {
+      color: #fff5c6;
+      border-color: rgba(255, 230, 163, 0.54);
+      background: linear-gradient(135deg, rgba(35, 110, 165, 0.44), rgba(70, 46, 12, 0.32));
+      box-shadow: 0 0 26px rgba(88, 210, 255, 0.2);
+    }
+    .hifi-mask-step.is-active .hifi-mask-step-mark {
+      color: #061526;
+      background: #ffe39f;
+      border-color: #ffe39f;
+      box-shadow: 0 0 16px rgba(255, 227, 159, 0.5);
+    }
+    .hifi-mask-step.is-done {
+      color: rgba(255, 246, 211, 0.92);
+      border-color: rgba(127, 229, 255, 0.3);
+      background: rgba(23, 80, 117, 0.22);
+    }
+    .hifi-mask-step.is-done .hifi-mask-step-mark {
+      color: #092034;
+      background: #8feaff;
+      border-color: #8feaff;
+    }
+    .hifi-mask-complete {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 230, 163, 0.36);
+      background: rgba(255, 230, 163, 0.1);
+      color: #fff0b7;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .hifi-mask-complete.is-visible {
+      display: flex;
+    }
+    .hifi-mask-complete-text {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+    }
+    .hifi-mask-view-btn {
+      min-height: 38px;
+      padding: 8px 16px;
+      border-color: rgba(127, 229, 255, 0.42);
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(127, 229, 255, 0.92), rgba(255, 230, 163, 0.9));
+      color: #071626;
+      font-family: 'STKaiti','KaiTi','Microsoft YaHei',serif;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      box-shadow:
+        0 14px 30px rgba(0, 0, 0, 0.28),
+        0 0 20px rgba(127, 229, 255, 0.18);
+    }
+    .perf-panel {
+      width: min(1040px, 100%);
+      margin: 0 auto 22px;
+      padding: 16px;
+      border: 1px solid rgba(127, 229, 255, 0.26);
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(5, 16, 30, 0.9), rgba(20, 12, 22, 0.84)),
+        rgba(0, 0, 0, 0.35);
+      color: #f7f0d0;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
+    }
+    .perf-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .perf-panel h2 {
+      margin: 0;
+      color: #fff3bc;
+      font-family: 'STKaiti','KaiTi','Microsoft YaHei',serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+    }
+    .perf-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .perf-actions button {
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: rgba(127, 229, 255, 0.1);
+      color: #9feeff;
+      border-color: rgba(127, 229, 255, 0.28);
+      font-size: 13px;
+      box-shadow: none;
+    }
+    .perf-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+    }
+    .perf-cell {
+      min-height: 70px;
+      padding: 10px;
+      border: 1px solid rgba(127, 229, 255, 0.14);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+    .perf-label {
+      display: block;
+      color: rgba(247, 240, 208, 0.66);
+      font-size: 12px;
+      letter-spacing: 1px;
+      margin-bottom: 7px;
+    }
+    .perf-value {
+      color: #8feaff;
+      font-family: 'Bahnschrift', 'Segoe UI', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    button {
+      min-height: 46px;
+      padding: 12px 24px;
+      border: 1px solid rgba(248, 217, 149, 0.28);
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.3s;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+    }
+    button:focus-visible {
+      outline: 2px solid rgba(255, 224, 135, 0.86);
+      outline-offset: 4px;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+    #startBtn {
+      background: #28a745;
+      color: white;
+    }
+    #startBtn:hover { background: #218838; }
+    #stopBtn {
+      background: #dc3545;
+      color: white;
+    }
+    #stopBtn:hover { background: #c82333; }
+    #resetBtn {
+      background: #6c757d;
+      color: white;
+    }
+    #resetBtn:hover { background: #5a6268; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .trigger-flash {
+      /* 红色闪烁已禁用 */
+    }
+    .log-section {
+      display: none;
+    }
+    .log-entry {
+      display: none;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .instructions {
+      display: none;
+    }
+    .instructions h3 {
+      display: none;
+    }
+    .instructions ol {
+      display: none;
+    }
+    .instructions li {
+      display: none;
+    }
+    .log-section {
+      display: none;
+    }
+    .log-entry {
+      display: none;
+    }
+   
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      html {
+        font-size: 16.5px;
+      }
+
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        padding: 18px;
+        border-radius: 22px;
+      }
+
+      .title-en,
+      .title-cn {
+        font-size: 38px;
+        letter-spacing: 4px;
+      }
+
+      .video-container {
+        max-width: 100%;
+      }
+
+      .controls {
+        width: 100%;
+        gap: 10px;
+      }
+
+      .controls button {
+        width: 100%;
+      }
+
+      .hifi-mask-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .ai-guide-head,
+      .ai-guide-compose {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .ai-guide-status {
+        max-width: 100%;
+      }
+
+      .gesture-dataset-head {
+        display: grid;
+      }
+
+      .hifi-mask-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .perf-panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .perf-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .signal-sweep,
+      .beam-haze,
+      .hud-orbit,
+      .data-stream,
+      .signal-cluster,
+      .chinese-title::before,
+      .chinese-title::after {
+        animation: none !important;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/legacy/taste_refinement.css" />
+</head>
+<body>
+  <!-- SVG 水波纹滤镜 -->
+  <svg style="position:absolute;width:0;height:0;">
+    <defs>
+      <filter id="water-ripple">
+        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" seed="2" result="turbulence">
+          <animate attributeName="baseFrequency" values="0.015;0.025;0.015" dur="8s" repeatCount="indefinite"/>
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="12" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 水波纹扩散层 -->
+  <div class="ripple-layer">
+    <div class="ripple ripple-1"></div>
+    <div class="ripple ripple-2"></div>
+    <div class="ripple ripple-3"></div>
+    <div class="ripple ripple-4"></div>
+    <div class="ripple ripple-5"></div>
+    <div class="ripple ripple-6"></div>
+  </div>
+
+  <!-- 流动脸谱层 -->
+  <div class="cloud-layer">
+    <div class="signal-sweep"></div>
+    <div class="beam-haze beam-a"></div>
+    <div class="beam-haze beam-b"></div>
+    <div class="beam-haze beam-c"></div>
+    <div class="hud-orbit orbit-left"></div>
+    <div class="hud-orbit orbit-right"></div>
+    <div class="data-stream stream-a"></div>
+    <div class="data-stream stream-b"></div>
+    <div class="data-stream stream-c"></div>
+    <div class="data-stream stream-d"></div>
+    <div class="signal-cluster cluster-left">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="signal-cluster cluster-right">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+<div class="container chinese-border app-hidden" id="appContainer">
+    <h1 class="chinese-title">
+      <span class="title-en">AI-Opera</span>
+      <span class="title-cn">智能川剧变脸</span>
+    </h1>
+
+    <div class="video-section">
+      <div class="video-container" id="videoContainer">
+        <div class="video-inner">
+          <video id="video" playsinline></video>
+          <canvas id="canvas"></canvas>
+          <canvas id="overlayCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20;"></canvas>
+        </div>
+        <div class="mask-decoration mask-left"></div>
+        <div class="mask-decoration mask-right"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn">启动摄像头</button>
+      <button id="stopBtn" disabled>停止</button>
+      <button id="resetBtn">重置</button>
+      <button id="hiFiMaskBtn">三维脸谱</button>
+      <button id="galleryBtn">脸谱收藏馆</button>
+    </div>
+
+    <div id="hiFiMaskPanel" class="hifi-mask-panel" aria-live="polite">
+      <div class="hifi-mask-header">
+        <h2>个人专属三维脸谱面罩生成</h2>
+        <span id="hiFiMaskBadge" class="hifi-mask-badge">MediaPipe 实时交互</span>
+      </div>
+      <div class="hifi-mask-progress" aria-hidden="true">
+        <div id="hiFiMaskProgressFill" class="hifi-mask-progress-fill"></div>
+      </div>
+      <ol id="hiFiMaskSteps" class="hifi-mask-steps"></ol>
+      <div id="hiFiMaskComplete" class="hifi-mask-complete">
+        <span id="hiFiMaskCompleteText" class="hifi-mask-complete-text">生成完成</span>
+        <button id="hiFiMaskViewBtn" class="hifi-mask-view-btn" type="button">查看模型</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== 首页：金色小球入口 ============== -->
+  <div id="landingPage" style="position:fixed;inset:0;z-index:50;">
+    <button id="goldOrbBtn" aria-label="进入变脸" style="
+      position:absolute;left:46.8%;top:48.8%;transform:translate(-50%,-50%);
+      width:130px;height:130px;border:none;border-radius:50%;cursor:pointer;
+      background:radial-gradient(circle at 35% 30%, #fff8dc 0%, #ffd700 35%, #d4af37 65%, #8b6914 100%);
+      box-shadow:
+        0 0 0 2px rgba(139,105,20,0.6),
+        0 0 30px 8px rgba(255,215,0,0.55),
+        0 0 80px 18px rgba(255,160,0,0.35),
+        inset 0 -8px 14px rgba(139,69,19,0.4),
+        inset 0 8px 14px rgba(255,255,255,0.5);
+      animation: orbPulse 2.4s ease-in-out infinite;
+      transition: transform 0.2s;
+    "></button>
+  </div>
+
+  <style>
+    @keyframes orbPulse {
+      0%, 100% { transform: scale(1); box-shadow:
+        0 0 0 2px rgba(139,105,20,0.6),
+        0 0 30px 8px rgba(255,215,0,0.55),
+        0 0 80px 18px rgba(255,160,0,0.35),
+        inset 0 -8px 14px rgba(139,69,19,0.4),
+        inset 0 8px 14px rgba(255,255,255,0.5); }
+      50% { transform: scale(1.06); box-shadow:
+        0 0 0 2px rgba(139,105,20,0.6),
+        0 0 50px 14px rgba(255,215,0,0.75),
+        0 0 110px 28px rgba(255,160,0,0.5),
+        inset 0 -8px 14px rgba(139,69,19,0.4),
+        inset 0 8px 14px rgba(255,255,255,0.6); }
+    }
+    #goldOrbBtn:hover { transform: scale(1.1) !important; }
+    /* 应用容器初始隐藏，金球点击后显示 */
+    .app-hidden { display: none !important; }
+
+    /* 鎏金/黑金 楷书标题 */
+    .gold-title {
+      font-family: 'STXingkai','华文行楷','XingKai SC','Xingkai SC','HanziPen SC','STKaiti','KaiTi','Microsoft YaHei',serif !important;
+      font-weight: 900 !important;
+      background: linear-gradient(135deg,
+        #2a1a05 0%,
+        #6b4d10 18%,
+        #d4af37 38%,
+        #fff4c2 50%,
+        #d4af37 62%,
+        #6b4d10 82%,
+        #2a1a05 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      background-clip: text !important;
+      color: transparent !important;
+      text-shadow: none !important;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)) drop-shadow(0 0 16px rgba(255,215,0,0.35));
+      letter-spacing: 14px;
+      text-align: center;
+      width: 100%;
+    }
+    .gold-title-en {
+      font-family: 'Cinzel','Cormorant Garamond','Times New Roman',serif !important;
+      font-weight: 700 !important;
+      letter-spacing: 10px;
+    }
+
+    .gallery-entry-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(4, 7, 13, 0.58), rgba(4, 7, 13, 0.92)),
+        url('gallary_bg.png') center center / cover no-repeat,
+        #120303;
+    }
+
+    .gallery-entry-overlay::before,
+    .gallery-entry-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .gallery-entry-overlay::before {
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 230, 173, 0.24), transparent 18%),
+        radial-gradient(circle at 50% 44%, rgba(127, 229, 255, 0.13), transparent 28%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.72), transparent 36%, transparent 64%, rgba(0, 0, 0, 0.72));
+    }
+
+    .gallery-entry-overlay::after {
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(127, 229, 255, 0.032) 0,
+          rgba(127, 229, 255, 0.032) 1px,
+          transparent 1px,
+          transparent 86px
+        ),
+        repeating-linear-gradient(
+          180deg,
+          rgba(127, 229, 255, 0.016) 0,
+          rgba(127, 229, 255, 0.016) 1px,
+          transparent 1px,
+          transparent 64px
+        );
+      mix-blend-mode: screen;
+      opacity: 0.56;
+    }
+
+    .gallery-spotlight-stage {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 96px 24px 84px;
+      overflow: hidden;
+    }
+
+    .gallery-spotlight-title {
+      position: absolute;
+      top: clamp(34px, 6vw, 56px);
+      left: 0;
+      right: 0;
+      color: #ffe6ad;
+      font-family: 'STXingkai','华文行楷','STKaiti','KaiTi',serif;
+      font-size: clamp(42px, 7vw, 70px);
+      font-weight: 900;
+      letter-spacing: clamp(8px, 2vw, 20px);
+      text-align: center;
+      text-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.76),
+        0 0 26px rgba(255, 215, 96, 0.26);
+    }
+
+    .gallery-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      z-index: 3;
+      min-height: 44px;
+      padding: 10px 18px;
+      border: 1px solid rgba(255, 230, 163, 0.42);
+      border-radius: 10px;
+      background: rgba(70, 16, 8, 0.86);
+      color: #ffe38c;
+      cursor: pointer;
+      font-family: 'STKaiti','KaiTi',serif;
+      font-size: 15px;
+      letter-spacing: 2px;
+    }
+
+    .spotlight-beam {
+      position: absolute;
+      top: -12vh;
+      left: 50%;
+      width: min(44vw, 520px);
+      height: 68vh;
+      transform: translateX(-50%);
+      clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+      background: linear-gradient(180deg, rgba(255, 235, 178, 0.34), rgba(255, 210, 96, 0.08) 72%, transparent);
+      filter: blur(2px);
+      opacity: 0.86;
+      pointer-events: none;
+    }
+
+    .spotlight-floor {
+      position: absolute;
+      left: 50%;
+      top: 62%;
+      width: min(52vw, 620px);
+      height: 140px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 230, 173, 0.3), rgba(127, 229, 255, 0.08) 46%, transparent 72%);
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .spotlight-target {
+      position: relative;
+      z-index: 2;
+      width: clamp(180px, 24vw, 280px);
+      min-height: clamp(260px, 34vw, 400px);
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      border: 0;
+      background: transparent;
+      color: #fff3c2;
+      cursor: pointer;
+      transform: translateY(12px);
+      transition: transform 180ms ease, filter 180ms ease;
+    }
+
+    .spotlight-target:hover {
+      transform: translateY(4px) scale(1.02);
+      filter: brightness(1.08);
+    }
+
+    .spotlight-target:active {
+      transform: translateY(8px) scale(0.99);
+    }
+
+    .spotlight-mask-frame {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border: 1px solid rgba(255, 230, 163, 0.32);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(255, 230, 173, 0.2), transparent 58%),
+        linear-gradient(180deg, rgba(8, 14, 24, 0.76), rgba(5, 8, 13, 0.58));
+      box-shadow:
+        0 34px 80px rgba(0, 0, 0, 0.58),
+        0 0 54px rgba(255, 215, 96, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    #spotlightMask {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter:
+        drop-shadow(0 20px 28px rgba(0, 0, 0, 0.62))
+        drop-shadow(0 0 28px rgba(255, 230, 173, 0.22));
+    }
+
+    .spotlight-target-label {
+      padding: 10px 18px;
+      border-top: 1px solid rgba(255, 230, 163, 0.22);
+      border-bottom: 1px solid rgba(255, 230, 163, 0.2);
+      background: linear-gradient(90deg, transparent, rgba(10, 6, 2, 0.72), transparent);
+      color: #fff3c2;
+      font-family: 'STKaiti','KaiTi',serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 5px;
+      text-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.95),
+        0 0 14px rgba(255, 214, 105, 0.55);
+      white-space: nowrap;
+    }
+
+    .gallery-entry-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 46px;
+      width: min(760px, calc(100% - 42px));
+      transform: translateX(-50%);
+      padding: 10px 18px;
+      color: rgba(255, 243, 194, 0.86);
+      text-align: center;
+      font-family: 'STKaiti','KaiTi',serif;
+      font-size: 16px;
+      line-height: 1.65;
+      letter-spacing: 4px;
+      background: linear-gradient(90deg, transparent, rgba(5, 8, 13, 0.7), transparent);
+      border-top: 1px solid rgba(127, 229, 255, 0.14);
+      border-bottom: 1px solid rgba(255, 230, 163, 0.16);
+    }
+
+    @media (max-width: 760px) {
+      .gallery-close-btn {
+        right: 14px;
+        top: 14px;
+      }
+
+      .spotlight-target-label,
+      .gallery-entry-hint {
+        letter-spacing: 2px;
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const isLiteMode = window.__legacyMode !== 'full';
+      const autoEnter = window.__legacyAutoEnter === true;
+      document.body.classList.toggle('is-lite', isLiteMode);
+      const orb = document.getElementById('goldOrbBtn');
+      const landing = document.getElementById('landingPage');
+      const app = document.getElementById('appContainer');
+      const cloudLayer = document.querySelector('.cloud-layer');
+      const showApp = () => {
+        landing.style.display = 'none';
+        app.classList.remove('app-hidden');
+        if (cloudLayer && !isLiteMode) cloudLayer.style.display = '';
+      };
+      // 初始隐藏流动脸谱层（landing 页只显示背景图）
+      if (cloudLayer) cloudLayer.style.display = 'none';
+      if (autoEnter) {
+        showApp();
+        return;
+      }
+      orb.addEventListener('click', () => {
+        landing.style.transition = 'opacity 0.6s';
+        landing.style.opacity = '0';
+        setTimeout(() => {
+          showApp();
+        }, 600);
+      });
+    });
+  </script>
+
+  <script>
+    (function(){
+      const steps = [
+        '已采集多角度人脸帧',
+        '已完成清晰度与姿态覆盖筛选',
+        '多视角个人脸型拟合中',
+        '脸谱 UV 锚点展开中',
+        '三维脸谱贴图生成中',
+        '法线与材质烘焙中',
+        '三维脸谱面罩导出完成',
+        '已加入脸谱陈列馆',
+      ];
+      const defaultSteps = steps.slice();
+      const button = document.getElementById('hiFiMaskBtn');
+      const panel = document.getElementById('hiFiMaskPanel');
+      const list = document.getElementById('hiFiMaskSteps');
+      const progressFill = document.getElementById('hiFiMaskProgressFill');
+      const complete = document.getElementById('hiFiMaskComplete');
+      const completeText = document.getElementById('hiFiMaskCompleteText');
+      const viewButton = document.getElementById('hiFiMaskViewBtn');
+      const badge = document.getElementById('hiFiMaskBadge');
+      const progressStops = [0, 9, 23, 41, 56, 75, 88, 96, 100];
+
+      if (!button || !panel || !list || !progressFill || !complete || !completeText || !viewButton || !badge) return;
+
+      steps.forEach((label, index) => {
+        const item = document.createElement('li');
+        item.className = 'hifi-mask-step';
+        item.dataset.stepIndex = String(index);
+
+        const mark = document.createElement('span');
+        mark.className = 'hifi-mask-step-mark';
+        mark.textContent = String(index + 1);
+
+        const text = document.createElement('span');
+        text.className = 'hifi-mask-step-text';
+        text.textContent = label;
+
+        item.appendChild(mark);
+        item.appendChild(text);
+        list.appendChild(item);
+      });
+
+      function syncStepLabels() {
+        const items = list.querySelectorAll('.hifi-mask-step');
+        items.forEach((item, index) => {
+          const text = item.querySelector('.hifi-mask-step-text');
+          if (text) text.textContent = steps[index];
+        });
+      }
+
+      function resetStepLabels() {
+        defaultSteps.forEach((label, index) => {
+          steps[index] = label;
+        });
+        syncStepLabels();
+      }
+
+      function renderStep(activeIndex) {
+        const items = list.querySelectorAll('.hifi-mask-step');
+        items.forEach((item, index) => {
+          const mark = item.querySelector('.hifi-mask-step-mark');
+          item.classList.toggle('is-done', index < activeIndex);
+          item.classList.toggle('is-active', index === activeIndex);
+          if (mark) {
+            mark.textContent = index < activeIndex ? '✓' : String(index + 1);
+          }
+        });
+
+        const progress = progressStops[Math.max(0, Math.min(progressStops.length - 1, activeIndex))] ?? 0;
+        progressFill.style.width = `${progress}%`;
+        badge.textContent = activeIndex >= steps.length ? '生成完成' : `流程 ${activeIndex + 1}/${steps.length}`;
+      }
+
+      function finishRun(message) {
+        const items = list.querySelectorAll('.hifi-mask-step');
+        items.forEach((item) => {
+          item.classList.add('is-done');
+          item.classList.remove('is-active');
+          const mark = item.querySelector('.hifi-mask-step-mark');
+          if (mark) mark.textContent = '✓';
+        });
+        progressFill.style.width = '100%';
+        badge.textContent = '生成完成';
+        completeText.textContent = message || '生成完成';
+        complete.classList.add('is-visible');
+        button.disabled = false;
+        button.textContent = '生成个人专属三维脸谱面罩';
+      }
+
+      viewButton.addEventListener('click', () => {
+        if (typeof window.__openPersonalModelViewer === 'function') {
+          window.__openPersonalModelViewer();
+          return;
+        }
+        const fallbackHref = new URL('/personal_model_viewer.html', window.location.origin);
+        fallbackHref.searchParams.set('mode', window.__legacyMode || 'lite');
+        window.top.location.href = fallbackHref.href;
+      });
+
+      window.__hqMaskStatusPanel = {
+        update(event = {}) {
+          if (event.type === 'start') {
+            resetStepLabels();
+            panel.classList.add('is-visible');
+            complete.classList.remove('is-visible');
+            completeText.textContent = '生成完成';
+            button.disabled = true;
+            button.textContent = '生成中...';
+            renderStep(0);
+            return;
+          }
+
+          if (event.type === 'step') {
+            if (typeof event.index === 'number' && event.label) {
+              steps[event.index] = event.label;
+              syncStepLabels();
+              renderStep(event.index);
+            }
+            return;
+          }
+
+          if (event.type === 'message') {
+            if (event.message) {
+              badge.textContent = event.message;
+            }
+            return;
+          }
+
+          if (event.type === 'busy') {
+            panel.classList.add('is-visible');
+            badge.textContent = event.message || '当前生成任务正在进行中';
+            return;
+          }
+
+          if (event.type === 'finish') {
+            if (typeof event.index === 'number' && event.label) {
+              steps[event.index] = event.label;
+              syncStepLabels();
+            }
+            finishRun(event.message || '生成完成');
+          }
+        }
+      };
+    })();
+  </script>
+
+  <script src="performance_monitor.js"></script>
+  <script src="backend_mask_client.js?v=20260529-fast-start-progress"></script>
+  <script src="face_knowledge_data.js"></script>
+  <script src="culture_knowledge_engine.js"></script>
+
+  <!-- ============== 个人脸谱陈列馆（入口页） ============== -->
+  <div id="galleryOverlay" class="gallery-entry-overlay">
+    <!-- 聚光灯舞台：点击脸谱跳转到弧形陈列页 -->
+    <div id="gallerySpotlightStage" class="gallery-spotlight-stage">
+      <button id="galleryCloseBtnTop" class="gallery-close-btn" type="button">返回舞台</button>
+      <h2 class="gallery-spotlight-title">个人脸谱陈列馆</h2>
+      <div class="spotlight-beam"></div>
+      <div class="spotlight-floor"></div>
+      <button id="spotlightTarget" class="spotlight-target" type="button" title="进入脸谱陈列馆" aria-label="进入脸谱陈列馆">
+        <span class="spotlight-mask-frame">
+          <img id="spotlightMask" src="faces/关羽.png" alt="聚光灯下的脸谱">
+        </span>
+        <span class="spotlight-target-label">进入脸谱陈列馆</span>
+      </button>
+      <div class="gallery-entry-hint">点击聚光灯下的脸谱，查看已有脸谱资源的弧形陈列</div>
+    </div>
+
+    <!-- 旧陈列网格保留给实时入藏与三维查看逻辑，不作为默认入口展示 -->
+    <div id="galleryGridStage" style="display:none;max-width:1200px;margin:0 auto;padding:30px 24px 60px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <h2 class="gold-title" style="font-size:44px;letter-spacing:14px;text-align:left;width:auto;">脸谱陈列</h2>
+        <div style="display:flex;gap:12px;">
+          <button id="galleryBackToSpotlight" style="background:rgba(60,20,0,0.8);color:#ffd700;border:1px solid #d4af37;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:15px;">← 返回聚光灯</button>
+          <button id="galleryCloseBtn" style="background:#8b0000;color:#ffd700;border:1px solid #d4af37;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:15px;">返回舞台</button>
+        </div>
+      </div>
+      <p id="galleryHint" style="color:#f5deb3;margin-bottom:24px;opacity:0.85;">尚未陈列脸谱。请先启动摄像头并切换不同脸谱，每张脸谱会在你佩戴时自动入藏（仅本次访问有效）。</p>
+      <div id="galleryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ============== 单个OBJ 360度查看页 ============== -->
+  <div id="viewerOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at center,#1a0303 0%,#000 80%);">
+    <div style="position:absolute;top:20px;left:24px;color:#ffd700;font-family:'KaiTi',serif;font-size:22px;letter-spacing:4px;" id="viewerTitle">脸谱</div>
+    <button id="viewerCloseBtn" style="position:absolute;top:20px;right:24px;background:#8b0000;color:#ffd700;border:1px solid #d4af37;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:15px;z-index:2;">← 返回陈列馆</button>
+    <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#f5deb3;opacity:0.7;font-size:13px;">🖱️ 拖拽旋转 · 滚轮缩放 · 右键平移</div>
+    <div id="viewerContainer" style="width:100%;height:100%;"></div>
+  </div>
+
+  <script src="gesture_sequence_recognizer.js?v=20260529-profile-trigger-fix"></script>
+  <script src="gesture_dataset_recorder.js"></script>
+  <script src="hand_face_gesture_detector.js?v=20260529-profile-trigger-fix"></script>
+  <script src="auto_emotion_learner.js"></script>
+  <script src="/mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="/mediapipe/face_mesh/face_mesh.js"></script>
+  <script src="/mediapipe/hands/hands.js"></script>
+
+  <script>
+    // 初始化
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const overlayCtx = overlayCanvas.getContext('2d');
+    const videoContainer = document.getElementById('videoContainer');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const stateDisplay = document.getElementById('stateDisplay');
+    const directionDisplay = document.getElementById('directionDisplay');
+    const triggerCount = document.getElementById('triggerCount');
+    const falsePositiveCount = document.getElementById('falsePositiveCount');
+    const logSection = document.getElementById('logSection');
+
+    let detector = new HandFaceSwipeDetector()
+    let emotionLearner = new AutoEmotionLearner()
+    const gestureDatasetRecorder = window.AIOperaGestureDatasetRecorder
+      ? new window.AIOperaGestureDatasetRecorder()
+      : null
+    window.aiOperaGestureDatasetRecorder = gestureDatasetRecorder
+    const perfMonitor = window.AIOperaPerformanceMonitor
+      ? new window.AIOperaPerformanceMonitor()
+      : null
+    window.aiOperaPerfMonitor = perfMonitor
+    let isRunning = false
+    let isStartingCamera = false
+    let cameraSessionId = 0
+    let camera = null
+    let faceMesh = null
+    let hands = null
+    const isLiteMode = window.__legacyMode !== 'full'
+    let mediaPipePrewarmPromise = null
+    let prewarmedFaceMesh = null
+    let prewarmedHands = null
+
+    function createFaceMeshModel() {
+      const model = new FaceMesh({
+        locateFile: (file) => `/mediapipe/face_mesh/${file}`,
+      })
+      model.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: !isLiteMode,
+        minDetectionConfidence: 0.55,
+        minTrackingConfidence: 0.6,
+      })
+      return model
+    }
+
+    function createHandsModel() {
+      const model = new Hands({
+        locateFile: (file) => `/mediapipe/hands/${file}`,
+      })
+      model.setOptions({
+        maxNumHands: isLiteMode ? 1 : 2,
+        modelComplexity: 0,
+        minDetectionConfidence: isLiteMode ? 0.36 : 0.4,
+        minTrackingConfidence: isLiteMode ? 0.36 : 0.42,
+      })
+      return model
+    }
+
+    async function initializeMediaPipeModel(model) {
+      if (model && typeof model.initialize === 'function') {
+        await model.initialize()
+      }
+      return model
+    }
+
+    function scheduleMediaPipePrewarm() {
+      if (mediaPipePrewarmPromise) return mediaPipePrewarmPromise
+      mediaPipePrewarmPromise = (async () => {
+        prewarmedFaceMesh = createFaceMeshModel()
+        prewarmedHands = createHandsModel()
+        await Promise.all([
+          initializeMediaPipeModel(prewarmedFaceMesh),
+          initializeMediaPipeModel(prewarmedHands),
+        ])
+        return { faceMesh: prewarmedFaceMesh, hands: prewarmedHands }
+      })().catch((error) => {
+        console.warn('MediaPipe prewarm failed:', error)
+        prewarmedFaceMesh = null
+        prewarmedHands = null
+        mediaPipePrewarmPromise = null
+        return null
+      })
+      return mediaPipePrewarmPromise
+    }
+
+    async function takePreparedMediaPipeModels(sessionId) {
+      const prepared = await (mediaPipePrewarmPromise || scheduleMediaPipePrewarm())
+      const nextFaceMesh = prepared?.faceMesh || createFaceMeshModel()
+      const nextHands = prepared?.hands || createHandsModel()
+      prewarmedFaceMesh = null
+      prewarmedHands = null
+      mediaPipePrewarmPromise = null
+      nextFaceMesh.onResults((results) => {
+        if (cameraSessionId === sessionId && (isRunning || isStartingCamera)) onFaceResults(results)
+      })
+      nextHands.onResults((results) => {
+        if (cameraSessionId === sessionId && (isRunning || isStartingCamera)) onHandsResults(results)
+      })
+      return { nextFaceMesh, nextHands }
+    }
+
+    const runSoon = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 250))
+    runSoon(() => scheduleMediaPipePrewarm())
+
+    // 情绪触发状态
+    let currentEmotionMaskFile = null
+    let lastEmotionSwitchTime = 0
+    const EMOTION_SWITCH_COOLDOWN = 1000  // 1秒冷却
+
+    const stateNames = {
+      [SwipeState.IDLE]: '待机',
+      [SwipeState.ENTERING]: '进入面部',
+      [SwipeState.CROSSING]: '横向穿过',
+      [SwipeState.EXITING]: '离开触发',
+      [SwipeState.TRIGGERED]: '变脸触发！'
+    };
+
+    const stateClasses = {
+      [SwipeState.IDLE]: 'state-idle',
+      [SwipeState.ENTERING]: 'state-entering',
+      [SwipeState.CROSSING]: 'state-crossing',
+      [SwipeState.EXITING]: 'state-exiting',
+      [SwipeState.TRIGGERED]: 'state-triggered'
+    };
+
+    const directionNames = {
+      [SwipeDirection.NONE]: '-',
+      [SwipeDirection.LEFT_TO_RIGHT]: '从左到右',
+      [SwipeDirection.RIGHT_TO_LEFT]: '从右到左',
+      [SwipeDirection.TOP_TO_BOTTOM]: '从上到下',
+      [SwipeDirection.BOTTOM_TO_TOP]: '从下到上'
+    }
+
+    function addLog(message, type = 'info') {
+      // 日志功能已禁用
+    }
+
+    function updateStats(stats) {
+      // 统计面板已隐藏，不需要更新
+    }
+
+    function triggerFlash() {
+      videoContainer.classList.add('trigger-flash');
+      setTimeout(() => {
+        videoContainer.classList.remove('trigger-flash');
+      }, 500);
+    }
+
+    // 初始化
+    let faceMeshResults = null;
+    let handsResults = null;
+
+    async function closeMediaPipeInstance(instance) {
+      if (!instance || typeof instance.close !== 'function') return;
+      try {
+        await instance.close();
+      } catch (error) {
+        console.warn('MediaPipe close failed:', error);
+      }
+    }
+
+    async function releaseCameraResources() {
+      const oldCamera = camera;
+      const oldFaceMesh = faceMesh;
+      const oldHands = hands;
+
+      camera = null;
+      faceMesh = null;
+      hands = null;
+      if (oldFaceMesh && oldFaceMesh === prewarmedFaceMesh) prewarmedFaceMesh = null;
+      if (oldHands && oldHands === prewarmedHands) prewarmedHands = null;
+      if ((oldFaceMesh || oldHands) && !prewarmedFaceMesh && !prewarmedHands) mediaPipePrewarmPromise = null;
+
+      if (oldCamera && typeof oldCamera.stop === 'function') {
+        try {
+          oldCamera.stop();
+        } catch (error) {
+          console.warn('Camera stop failed:', error);
+        }
+      }
+
+      if (video.srcObject && typeof video.srcObject.getTracks === 'function') {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+        video.srcObject = null;
+      }
+
+      await Promise.all([
+        closeMediaPipeInstance(oldFaceMesh),
+        closeMediaPipeInstance(oldHands),
+      ]);
+    }
+
+    function resetRuntimeFrameState() {
+      faceMeshResults = null;
+      handsResults = null;
+      currentEmotionMaskFile = null;
+      lastEmotionSwitchTime = 0;
+      if (typeof detector?.resetGestureTracking === 'function') {
+        detector.resetGestureTracking();
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    }
+
+    async function startCamera() {
+      if (isRunning || isStartingCamera) return;
+
+      isStartingCamera = true;
+      startBtn.disabled = true;
+      stopBtn.disabled = true;
+      const sessionId = ++cameraSessionId;
+
+      try {
+        await releaseCameraResources();
+        resetRuntimeFrameState();
+        addLog('正在初始化 MediaPipe...');
+        
+        // 初始化 Face Mesh
+        const { nextFaceMesh, nextHands } = await takePreparedMediaPipeModels(sessionId);
+        /*
+        const nextFaceMesh = new FaceMesh({
+          locateFile: (file) => {
+            return `/mediapipe/face_mesh/${file}`;
+          }
+        });
+        nextFaceMesh.setOptions({
+          maxNumFaces: 1,
+          refineLandmarks: !isLiteMode,
+          minDetectionConfidence: 0.55,
+          minTrackingConfidence: 0.6
+        });
+        nextFaceMesh.onResults((results) => {
+          if (cameraSessionId === sessionId && isRunning) onFaceResults(results);
+        });
+
+        // 初始化 Hands
+        const nextHands = new Hands({
+          locateFile: (file) => {
+            return `/mediapipe/hands/${file}`;
+          }
+        });
+        nextHands.setOptions({
+          maxNumHands: isLiteMode ? 1 : 2,
+          modelComplexity: 0,
+          minDetectionConfidence: isLiteMode ? 0.36 : 0.4,
+          minTrackingConfidence: isLiteMode ? 0.36 : 0.42
+        });
+        nextHands.onResults((results) => {
+          if (cameraSessionId === sessionId && isRunning) onHandsResults(results);
+        });
+
+        */
+        faceMesh = nextFaceMesh;
+        hands = nextHands;
+        let startupFrameCount = 0;
+        const FACE_ONLY_STARTUP_FRAMES = 8;
+
+        // 初始化摄像头
+        const nextCamera = new Camera(video, {
+          onFrame: async () => {
+            if (cameraSessionId !== sessionId || (!isRunning && !isStartingCamera)) return;
+            const frameToken = perfMonitor?.beginFrame();
+            try {
+              const shouldRunHands = startupFrameCount >= FACE_ONLY_STARTUP_FRAMES;
+              startupFrameCount += 1;
+              if (perfMonitor) {
+                await perfMonitor.measureAsync('faceMesh', () => nextFaceMesh.send({ image: video }));
+                if (shouldRunHands) await perfMonitor.measureAsync('hands', () => nextHands.send({ image: video }));
+              } else {
+                await nextFaceMesh.send({ image: video });
+                if (shouldRunHands) await nextHands.send({ image: video });
+              }
+            } catch (error) {
+              if (cameraSessionId === sessionId && (isRunning || isStartingCamera)) {
+                console.warn('MediaPipe frame failed:', error);
+              }
+            } finally {
+              perfMonitor?.endFrame(frameToken);
+            }
+          },
+          width: 640,
+          height: 480
+        });
+
+        camera = nextCamera;
+        await nextCamera.start();
+
+        if (cameraSessionId !== sessionId || camera !== nextCamera) {
+          try {
+            nextCamera.stop();
+          } catch (error) {
+            console.warn('Camera stop after stale start failed:', error);
+          }
+          await Promise.all([
+            closeMediaPipeInstance(nextFaceMesh),
+            closeMediaPipeInstance(nextHands),
+          ]);
+          return;
+        }
+        isRunning = true;
+        perfMonitor?.startSession();
+        
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        addLog('摄像头已启动，请挥手测试！', 'info');
+        
+        document.getElementById('appContainer').classList.add('is-running');
+      } catch (error) {
+        addLog(`错误：${error.message}`, 'warn');
+        console.error(error);
+        if (cameraSessionId === sessionId) {
+          isRunning = false;
+          await releaseCameraResources();
+        }
+      } finally {
+        if (cameraSessionId === sessionId) {
+          isStartingCamera = false;
+          startBtn.disabled = isRunning;
+          stopBtn.disabled = !isRunning;
+        }
+      }
+    }
+
+    async function stopCamera() {
+      cameraSessionId++;
+      isRunning = false;
+      isStartingCamera = false;
+      perfMonitor?.stopSession();
+      await releaseCameraResources();
+      resetRuntimeFrameState();
+      runSoon(() => scheduleMediaPipePrewarm());
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      // 隐藏 3D 面罩并重置启动期计时，下次启动重新 warmup，避免黑脸
+      if (personalizedRenderer && personalizedRenderer.faceMesh) {
+        personalizedRenderer.faceMesh.visible = false;
+        if (personalizedRenderer.faceBackMesh) personalizedRenderer.faceBackMesh.visible = false;
+        personalizedRenderer._firstLandmarkTime = null;
+      }
+      addLog('摄像头已停止');
+      
+      document.getElementById('appContainer').classList.remove('is-running');
+    }
+
+    function onFaceResults(results) {
+      faceMeshResults = results;
+
+      // 更新3D面具位置
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+        updateMaskPosition(results.multiFaceLandmarks[0])
+      }
+      
+      processAndDraw();
+    }
+
+    function onHandsResults(results) {
+      handsResults = results;
+      processAndDraw();
+    }
+
+    function processAndDraw() {
+      if (!isRunning || !faceMeshResults) return;
+
+      const drawStartedAt = performance.now();
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(faceMeshResults.image, 0, 0, canvas.width, canvas.height);
+
+      // 同步 overlay canvas 尺寸 + 清空
+      if (overlayCanvas.width !== canvas.width || overlayCanvas.height !== canvas.height) {
+        overlayCanvas.width = canvas.width;
+        overlayCanvas.height = canvas.height;
+      }
+      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+      let faceLandmarks = null;
+      if (faceMeshResults.multiFaceLandmarks && faceMeshResults.multiFaceLandmarks.length > 0) {
+        faceLandmarks = faceMeshResults.multiFaceLandmarks[0];
+        
+        // 情绪检测（自动学习器）
+        if (isRunning && faceLandmarks) {
+          const maskFile = emotionLearner.update(faceLandmarks)
+
+          if (maskFile && maskFile !== currentEmotionMaskFile) {
+            const now = performance.now()
+            if ((now - lastEmotionSwitchTime) > EMOTION_SWITCH_COOLDOWN) {
+              lastEmotionSwitchTime = now
+              currentEmotionMaskFile = maskFile
+
+              const stats = emotionLearner.getStats()
+              addLog(`🎭 ${stats.phase === 'pre-learning' ? '📚学习中: ' + stats.currentEmotion : '自动变脸: ' + stats.emotionName}`, 'trigger')
+
+              if (typeof switchFaceMask === 'function') {
+                switchFaceMask(maskFile)
+              }
+            }
+          }
+        }
+        
+        // 【调试元素-已隐藏】绘制面部网格
+        // drawConnectors(ctx, faceLandmarks, FACEMESH_TESSELATION, 
+        //               { color: '#C0C0C070', lineWidth: 1 });
+      }
+
+      // 【调试元素-已隐藏】绘制手部关键点
+      // if (handsResults && handsResults.multiHandLandmarks && handsResults.multiHandLandmarks.length > 0) {
+      //   for (const handLandmarks of handsResults.multiHandLandmarks) {
+      //     drawConnectors(ctx, handLandmarks, HAND_CONNECTIONS,
+      //                   { color: '#00FF00', lineWidth: 3 });
+      //     drawLandmarks(ctx, handLandmarks,
+      //                  { color: '#FF0000', lineWidth: 1, radius: 3 });
+      //   }
+      // }
+
+      // 更新检测器
+      if (isRunning && faceLandmarks) {
+        const handLandmarks = pickBestHandForSwipe(faceLandmarks, handsResults);
+
+        const gestureStartedAt = performance.now()
+        const state = detector.update(faceLandmarks, handLandmarks, currentYaw || 0, currentPitch || 0)
+        gestureDatasetRecorder?.recordFrame({
+          faceLandmarks,
+          handsResults,
+          selectedHand: handLandmarks,
+          yaw: currentYaw || 0,
+          pitch: currentPitch || 0,
+          detector,
+        })
+        perfMonitor?.recordGestureEvaluation(performance.now() - gestureStartedAt, {
+          triggered: detector.triggered,
+          triggerType: detector.triggerType,
+          direction: detector.direction,
+        })
+        updateStats(detector.getStats())
+        updateLearningProgress()
+
+        if (detector.triggered) {
+          triggerFlash()
+          addLog(`触发变脸！类型=${detector.triggerType}，方向=${directionNames[detector.direction]}`, 'trigger')
+          // 切换面具
+          switchFaceMask()
+        }
+
+        // 【调试元素-已隐藏】绘制面部区域框
+        // const region = detector.detectFaceRegion(faceLandmarks);
+        // if (region) {
+        //   const w = canvas.width;
+        //   const h = canvas.height;
+        //   const { xMin, yMin, xMax, yMax } = region.bbox;
+        //   ctx.strokeStyle = '#00ff00';
+        //   ctx.lineWidth = 2;
+        //   ctx.strokeRect(xMin * w, yMin * h, (xMax - xMin) * w, (yMax - yMin) * h);
+        // }
+      }
+
+      // ===== 喷火系统（粒子在主层即可，因为它本身是发光特效）=====
+      if (isRunning && typeof fireBreathUpdate === 'function') {
+        fireBreathUpdate(faceLandmarks, handsResults, currentYaw || 0, ctx, canvas.width, canvas.height);
+      }
+
+      // ===== 在 overlay 层绘制：手部 mask（让面具被手遮住） + 扇子 =====
+      if (isRunning && faceMeshResults && handsResults && handsResults.multiHandLandmarks
+          && handsResults.multiHandLandmarks.length > 0
+          && typeof drawHandOverlay === 'function') {
+        drawHandOverlay(overlayCtx, overlayCanvas.width, overlayCanvas.height, handsResults, faceMeshResults.image);
+      }
+      if (isRunning && typeof fanUpdate === 'function') {
+        // 扇子画到 overlay（在面具之上）
+        fanUpdate(faceLandmarks, handsResults, currentYaw || 0, overlayCtx, overlayCanvas.width, overlayCanvas.height);
+      }
+
+      ctx.restore();
+      perfMonitor?.recordDraw(performance.now() - drawStartedAt);
+    }
+
+    function updateLearningProgress() {
+      // 学习进度面板已隐藏，不需要更新
+    }
+
+    function pickBestHandForSwipe(faceLandmarks, handsRes) {
+      if (!faceLandmarks || !handsRes?.multiHandLandmarks?.length) return null;
+
+      const faceCx = (faceLandmarks[234].x + faceLandmarks[454].x) / 2;
+      const faceCy = (faceLandmarks[10].y + faceLandmarks[152].y) / 2;
+      const faceW = Math.abs(faceLandmarks[454].x - faceLandmarks[234].x);
+      const faceH = Math.abs(faceLandmarks[152].y - faceLandmarks[10].y);
+
+      let bestHand = null;
+      let bestScore = Number.POSITIVE_INFINITY;
+
+      for (const hand of handsRes.multiHandLandmarks) {
+        if (!hand || hand.length < 21) continue;
+
+        const palmIndices = [0, 5, 9, 13, 17];
+        const palmPoints = palmIndices.map((index) => hand[index]).filter(Boolean);
+        if (palmPoints.length === 0) continue;
+
+        const palmCenter = palmPoints.reduce(
+          (acc, point) => {
+            acc.x += point.x;
+            acc.y += point.y;
+            return acc;
+          },
+          { x: 0, y: 0 },
+        );
+        palmCenter.x /= palmPoints.length;
+        palmCenter.y /= palmPoints.length;
+
+        const swipeAnchor =
+          typeof detector !== 'undefined' &&
+          detector &&
+          typeof detector.getSwipeAnchor === 'function'
+            ? detector.getSwipeAnchor(hand) || palmCenter
+            : palmCenter;
+
+        const dx = swipeAnchor.x - faceCx;
+        const dy = swipeAnchor.y - faceCy;
+        const distanceScore = Math.abs(dx) / Math.max(faceW, 0.001) + Math.abs(dy) / Math.max(faceH, 0.001);
+
+        const contactIndices = [0, 5, 9, 13, 17, 4, 8, 12];
+        const touchCount = contactIndices.reduce((count, index) => {
+          const point = hand[index];
+          if (!point) return count;
+          const inFaceBox =
+            point.x >= faceCx - faceW * 0.8 &&
+            point.x <= faceCx + faceW * 0.8 &&
+            point.y >= faceCy - faceH * 0.7 &&
+            point.y <= faceCy + faceH * 0.7;
+          return count + (inFaceBox ? 1 : 0);
+        }, 0);
+
+        const openHandBonus =
+          typeof detector !== 'undefined' &&
+          detector &&
+          typeof detector.isOpenHand === 'function' &&
+          detector.isOpenHand(hand)
+            ? 0.42
+            : 0;
+
+        const score = distanceScore - touchCount * 0.22 - openHandBonus;
+        if (score < bestScore) {
+          bestScore = score;
+          bestHand = hand;
+        }
+      }
+
+      return bestHand;
+    }
+
+    // 事件监听
+    startBtn.addEventListener('click', startCamera);
+    stopBtn.addEventListener('click', stopCamera);
+    resetBtn.addEventListener('click', () => {
+      detector = new HandFaceSwipeDetector();
+      perfMonitor?.reset();
+      updateStats({
+        currentState: SwipeState.IDLE,
+        currentDirection: SwipeDirection.NONE,
+        totalSwipes: 0,
+        falsePositivesFiltered: 0
+      });
+      addLog('检测器已重置');
+    });
+
+    // 初始化
+    updateStats({
+      currentState: SwipeState.IDLE,
+      currentDirection: SwipeDirection.NONE,
+      totalSwipes: 0,
+      falsePositivesFiltered: 0
+    });
+  </script>
+
+  <!-- Three.js for mask -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <!-- 个性化人脸渲染器 -->
+  <script src="personalized_face_renderer.js?v=20260529-fast-start-progress"></script>
+
+  <script>
+    // ======================== 个性化3D人脸渲染器 ========================
+    let personalizedRenderer = null
+    let currentYaw = 0
+    let currentPitch = 0
+    
+    // 初始化个性化渲染器
+    async function initMask3D() {
+      const container = document.getElementById('videoContainer')
+      personalizedRenderer = new PersonalizedFaceRenderer()
+      window.personalizedRenderer = personalizedRenderer
+      const success = await personalizedRenderer.init(container, 640, 480)
+      
+      if (success) {
+        addLog('✅ 个性化3D人脸渲染器初始化完成', 'success')
+      } else {
+        addLog('❌ 个性化渲染器初始化失败', 'error')
+      }
+    }
+    
+    // ======================== 脸谱切换（兼容旧接口） ========================
+    async function switchFaceMask(specificMaskFile) {
+      if (!personalizedRenderer || !personalizedRenderer.isInitialized) {
+        addLog('⚠️ 渲染器未初始化', 'warning')
+        return
+      }
+      
+      if (specificMaskFile) {
+        addLog(`🎭 情绪触发切换: ${specificMaskFile}`, 'trigger')
+        const switched = await personalizedRenderer.switchTexture(specificMaskFile)
+        if (switched && typeof window.__recordExperiencedMask === 'function') {
+          window.__recordExperiencedMask({
+            textureKey: specificMaskFile,
+            source: 'stage-emotion-switch',
+            timestamp: Date.now(),
+          })
+        }
+        if (switched) perfMonitor?.recordMaskSwitch('emotion')
+      } else {
+        addLog(`🎭 手势触发切换脸谱`, 'trigger')
+        const switched = await personalizedRenderer.switchTexture()
+        if (switched) {
+          const key = personalizedRenderer.faceTextureList?.[personalizedRenderer.currentTextureIndex] || 'guanyu'
+          if (typeof window.__recordExperiencedMask === 'function') {
+            window.__recordExperiencedMask({
+              textureKey: key,
+              source: `stage-${detector?.triggerType || 'gesture'}-switch`,
+              timestamp: Date.now(),
+            })
+          }
+          perfMonitor?.recordMaskSwitch(detector?.triggerType || 'gesture')
+        }
+      }
+    }
+
+    let maskOcclusionHoldFrames = 0
+    const MASK_OCCLUSION_HOLD_FRAMES = 3
+    const MASK_OCCLUSION_PALM_INDICES = [0, 5, 9, 13, 17]
+
+    function shouldFreezeMaskForHandOcclusion(faceLandmarks, handsRes) {
+      if (!faceLandmarks || !handsRes?.multiHandLandmarks?.length) return false
+
+      const left = Math.min(faceLandmarks[234].x, faceLandmarks[454].x)
+      const right = Math.max(faceLandmarks[234].x, faceLandmarks[454].x)
+      const top = Math.min(faceLandmarks[10].y, faceLandmarks[152].y)
+      const bottom = Math.max(faceLandmarks[10].y, faceLandmarks[152].y)
+      const faceWidth = right - left
+      const faceHeight = bottom - top
+
+      if (faceWidth <= 0 || faceHeight <= 0) return false
+
+      const innerLeft = left + faceWidth * 0.12
+      const innerRight = right - faceWidth * 0.12
+      const innerTop = top + faceHeight * 0.08
+      const innerBottom = bottom - faceHeight * 0.04
+
+      const inFaceCore = (point) =>
+        point &&
+        point.x >= innerLeft &&
+        point.x <= innerRight &&
+        point.y >= innerTop &&
+        point.y <= innerBottom
+
+      for (const hand of handsRes.multiHandLandmarks) {
+        const palmPoints = MASK_OCCLUSION_PALM_INDICES
+          .map((index) => hand[index])
+          .filter(Boolean)
+
+        if (palmPoints.length === 0) continue
+
+        const coveredCount = palmPoints.filter(inFaceCore).length
+        if (coveredCount >= 2) return true
+
+        const palmCenter = palmPoints.reduce(
+          (acc, point) => {
+            acc.x += point.x
+            acc.y += point.y
+            return acc
+          },
+          { x: 0, y: 0 },
+        )
+        palmCenter.x /= palmPoints.length
+        palmCenter.y /= palmPoints.length
+
+        if (inFaceCore(palmCenter)) return true
+      }
+
+      return false
+    }
+    
+    // ======================== 更新面具位置（供onFaceResults调用） ========================
+    function updateMaskPosition(landmarks) {
+      if (personalizedRenderer && personalizedRenderer.isInitialized) {
+        if (shouldFreezeMaskForHandOcclusion(landmarks, handsResults)) {
+          maskOcclusionHoldFrames = MASK_OCCLUSION_HOLD_FRAMES
+        }
+
+        if (maskOcclusionHoldFrames > 0) {
+          maskOcclusionHoldFrames--
+          return
+        }
+
+        personalizedRenderer.update(landmarks)
+        currentYaw = personalizedRenderer.currentYaw
+        currentPitch = personalizedRenderer.currentPitch
+        if (window.backendMaskClient && typeof window.backendMaskClient.maybeStartPersonalObjBootstrap === 'function') {
+          window.backendMaskClient.maybeStartPersonalObjBootstrap()
+        }
+      }
+    }
+
+    // 初始化3D面具
+    setTimeout(() => initMask3D(), 500)
+  </script>
+
+  <!-- ============== 喷火系统 ============== -->
+  <script>
+  (function(){
+    // ===== 状态机 =====
+    const FIRE_IDLE = 0, FIRE_CHARGING = 1, FIRE_FIRING = 2, FIRE_COOLDOWN = 3;
+    let fireState = FIRE_IDLE;
+    let chargeStart = 0;
+    let fireStart = 0;
+    let cooldownStart = 0;
+    let fireSide = 0; // +1=right(画面右), -1=left
+    let fireParticles = [];
+    let emberParticles = []; // 火星
+    // 手位置（归一化）
+    let torchX = 0, torchY = 0;
+    // 嘴巴位置（像素）
+    let mouthPx = 0, mouthPy = 0;
+
+    const CHARGE_MS = 2000;
+    const FIRE_MS = 2500;
+    const COOLDOWN_MS = 2000;
+    const YAW_THRESHOLD = 0.18;
+    // 手相对脸的距离阈值：手腕 x 与脸中心 x 之差，单位为脸宽倍数
+    const HAND_DISTANCE_FROM_FACE = 0.55; // 手必须离开脸中心至少 55% 脸宽
+    // 手在画面上半部
+    const HAND_Y_THRESHOLD = 0.75;
+
+    // ===== 检测：头转向 + 同侧手举起 + 手离脸有一定距离 =====
+    function detectFireCondition(faceLandmarks, handsRes, yaw) {
+      if (!faceLandmarks || !handsRes || !handsRes.multiHandLandmarks || handsRes.multiHandLandmarks.length === 0) return null;
+      if (Math.abs(yaw) < YAW_THRESHOLD) return null;
+
+      // 计算脸中心 + 脸宽（基于 234/454 颊侧关键点）
+      const leftCheek = faceLandmarks[234];
+      const rightCheek = faceLandmarks[454];
+      if (!leftCheek || !rightCheek) return null;
+      const faceCx = (leftCheek.x + rightCheek.x) / 2;
+      const faceCy = (leftCheek.y + rightCheek.y) / 2;
+      const faceW = Math.abs(rightCheek.x - leftCheek.x);
+      if (faceW < 0.05) return null; // 脸太小 / 无效
+
+      const headTurnedRight = yaw > 0; // 用户头转向自己的右侧
+
+      for (let i = 0; i < handsRes.multiHandLandmarks.length; i++) {
+        const hand = handsRes.multiHandLandmarks[i];
+        const wrist = hand[0];
+        if (!wrist) continue;
+
+        // 手必须在画面上半部（手举起）
+        if (wrist.y > HAND_Y_THRESHOLD) continue;
+
+        // 摄像头是镜像的：用户的右手 → 画面左侧（wrist.x < faceCx）
+        // 用户头转右 + 举右手 → 需要 wrist.x < faceCx
+        // 用户头转左 + 举左手 → 需要 wrist.x > faceCx
+        const handOnScreenRight = wrist.x > faceCx;
+        // 用户实际举的是哪只手（与画面侧相反）
+        const userRaisedRightHand = !handOnScreenRight;
+        const sameSide = (headTurnedRight === userRaisedRightHand);
+        if (!sameSide) continue;
+
+        // 手必须远离脸（避免手拂过脸时误触）
+        const dx = Math.abs(wrist.x - faceCx);
+        if (dx < HAND_DISTANCE_FROM_FACE * faceW) continue;
+
+        // 喷火方向 = 用户头朝向方向（在镜像画面上：头右转 yaw>0 → 喷向画面左侧 side=-1）
+        // 因为镜像，用户右侧 = 画面左侧
+        return {
+          side: headTurnedRight ? -1 : 1,
+          wrist: wrist,
+          handLandmarks: hand,
+          faceCx, faceCy, faceW,
+        };
+      }
+      return null;
+    }
+
+    // ===== 火焰粒子 =====
+    function spawnFireParticles(cx, cy, side, count) {
+      // side: +1 = 火向画面右喷, -1 = 火向画面左喷
+      const UP_TILT = Math.PI / 7; // 整体上抬约 25°
+      for (let i = 0; i < count; i++) {
+        const speed = 6 + Math.random() * 14;
+        const baseAngle = side > 0 ? 0 : Math.PI;
+        // 减去 side*UP_TILT：side=+1 → 角度变负(右上)，side=-1 → 角度变大(左上)
+        const angle = baseAngle - side * UP_TILT + (Math.random() - 0.5) * 0.6;
+        fireParticles.push({
+          x: cx + (side > 0 ? 8 : -8),
+          y: cy + (Math.random() - 0.5) * 6,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 2.5,
+          life: 1.0,
+          decay: 0.012 + Math.random() * 0.018,
+          size: 14 + Math.random() * 22,
+          turb: Math.random() * 100,
+          spin: (Math.random() - 0.5) * 0.4,
+          hue: Math.random() * 0.3, // 0=橙红, 0.3=金黄
+        });
+      }
+      // 随机火星
+      if (Math.random() < 0.7) {
+        for (let i = 0; i < 3; i++) {
+          emberParticles.push({
+            x: cx, y: cy,
+            vx: (side > 0 ? 1 : -1) * (8 + Math.random() * 12),
+            vy: -2 + (Math.random() - 0.5) * 4,
+            life: 1.0, decay: 0.02,
+            size: 1.5 + Math.random() * 2,
+          });
+        }
+      }
+    }
+
+    function updateParticles() {
+      for (let i = fireParticles.length - 1; i >= 0; i--) {
+        const p = fireParticles[i];
+        // 添加湍流扰动
+        p.turb += 0.15;
+        p.x += p.vx + Math.sin(p.turb) * 1.2;
+        p.y += p.vy + Math.cos(p.turb * 0.8) * 0.8;
+        p.vy -= 0.25; // 火焰上浮
+        p.vx *= 0.985;
+        p.life -= p.decay;
+        p.size *= 0.992;
+        if (p.life <= 0 || p.size < 1) fireParticles.splice(i, 1);
+      }
+      for (let i = emberParticles.length - 1; i >= 0; i--) {
+        const p = emberParticles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.15; // 重力
+        p.life -= p.decay;
+        if (p.life <= 0) emberParticles.splice(i, 1);
+      }
+    }
+
+    function drawParticles(ctx) {
+      for (const p of fireParticles) {
+        const a = Math.max(0, p.life);
+        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 1.4);
+        glow.addColorStop(0, `rgba(255,${180 + Math.floor(p.hue * 60)},80,${a * 0.45})`);
+        glow.addColorStop(1, 'rgba(255,80,0,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+        const core = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+        if (a > 0.7) {
+          core.addColorStop(0, `rgba(255,255,${200 + Math.floor(a*40)},${a})`);
+          core.addColorStop(0.35, `rgba(255,${190 + Math.floor(p.hue*40)},60,${a * 0.95})`);
+          core.addColorStop(0.7, `rgba(255,${100 + Math.floor(p.hue*60)},0,${a * 0.7})`);
+          core.addColorStop(1, 'rgba(180,30,0,0)');
+        } else if (a > 0.4) {
+          core.addColorStop(0, `rgba(255,${200 + Math.floor(p.hue*40)},80,${a})`);
+          core.addColorStop(0.4, `rgba(255,${100 + Math.floor(p.hue*40)},20,${a * 0.85})`);
+          core.addColorStop(1, 'rgba(120,10,0,0)');
+        } else {
+          core.addColorStop(0, `rgba(220,80,20,${a})`);
+          core.addColorStop(0.5, `rgba(150,40,10,${a * 0.7})`);
+          core.addColorStop(1, 'rgba(60,10,0,0)');
+        }
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      for (const p of emberParticles) {
+        const a = Math.max(0, p.life);
+        ctx.fillStyle = `rgba(255,${200 + Math.floor(a * 55)},80,${a})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // ===== 火把绘制（图片版） =====
+    const torchImg = new Image();
+    torchImg.src = 'huoba.png';
+    
+    function drawTorch(ctx, wx, wy, cw, ch) {
+      const SCALE = 0.1;       // 火把整体缩放（50%）
+      const Y_OFFSET = 15;     // 相对手腕向上偏移（像素）
+      const px = wx * cw;       // 手掌中心X坐标
+      const py = wy * ch + Y_OFFSET;  // 手掌中心Y坐标（加上偏移）
+      const t = performance.now() / 200;
+      const flickerX = Math.sin(t * 1.5) * 2;
+      const flickerY = Math.sin(t * 2) * 1.5;
+
+      if (!torchImg.complete) return;
+      
+      ctx.save();
+      
+      // 计算图片尺寸和位置：图片底部（末端）对准手掌中心
+      const imgW = torchImg.width * SCALE;
+      const imgH = torchImg.height * SCALE;
+      const drawX = px - imgW / 2 + flickerX;  // 水平居中 + 抖动
+      const drawY = py - imgH;  // 图片底部对齐手掌中心
+      
+      ctx.drawImage(torchImg, drawX, drawY, imgW, imgH);
+      
+      ctx.restore();
+    }
+
+    // ===== 主更新函数（每帧从 processAndDraw 调用） =====
+    window.fireBreathUpdate = function(faceLandmarks, handsRes, yaw, ctx, cw, ch) {
+      const now = performance.now();
+      const cond = detectFireCondition(faceLandmarks, handsRes, yaw);
+
+      switch (fireState) {
+        case FIRE_IDLE:
+          if (cond) {
+            fireState = FIRE_CHARGING;
+            chargeStart = now;
+            // 喷火方向 = 头朝向方向（与 cond.side 一致：用户头转哪边，火喷哪边）
+            fireSide = cond.side;
+            torchX = cond.wrist.x;
+            torchY = cond.wrist.y;
+          }
+          break;
+
+        case FIRE_CHARGING:
+          if (!cond || cond.side !== fireSide) {
+            fireState = FIRE_IDLE;
+            if (window.personalizedRenderer) personalizedRenderer.setEmissive(0);
+            break;
+          }
+          torchX = cond.wrist.x;
+          torchY = cond.wrist.y;
+
+          var progress = Math.min(1, (now - chargeStart) / CHARGE_MS);
+          if (window.personalizedRenderer) personalizedRenderer.setEmissive(progress * 1.5);
+
+          drawTorch(ctx, torchX, torchY, cw, ch);
+
+          if (progress >= 1) {
+            fireState = FIRE_FIRING;
+            fireStart = now;
+            if (faceLandmarks) {
+              const upper = faceLandmarks[13];
+              const lower = faceLandmarks[14];
+              mouthPx = ((upper.x + lower.x) / 2) * cw;
+              mouthPy = ((upper.y + lower.y) / 2) * ch;
+            }
+          }
+          break;
+
+        case FIRE_FIRING:
+          var elapsed = now - fireStart;
+          if (elapsed > FIRE_MS) {
+            fireState = FIRE_COOLDOWN;
+            cooldownStart = now;
+            if (window.personalizedRenderer) personalizedRenderer.setEmissive(0);
+            break;
+          }
+
+          if (window.personalizedRenderer) personalizedRenderer.setEmissive(1.5);
+
+          if (faceLandmarks) {
+            const upper = faceLandmarks[13];
+            const lower = faceLandmarks[14];
+            mouthPx = ((upper.x + lower.x) / 2) * cw;
+            mouthPy = ((upper.y + lower.y) / 2) * ch;
+          }
+
+          if (cond) { torchX = cond.wrist.x; torchY = cond.wrist.y; }
+          drawTorch(ctx, torchX, torchY, cw, ch);
+
+          // 喷火（方向 = 头朝向方向）
+          spawnFireParticles(mouthPx, mouthPy, fireSide, 18);
+          break;
+
+        case FIRE_COOLDOWN:
+          if (now - cooldownStart > COOLDOWN_MS) {
+            fireState = FIRE_IDLE;
+          }
+          break;
+      }
+
+      updateParticles();
+      if (fireParticles.length > 0 || emberParticles.length > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        drawParticles(ctx);
+        ctx.restore();
+      }
+    };
+  })();
+  </script>
+
+  <!-- ============== 手部图层覆盖（手遮住面具） ============== -->
+  <script>
+  (function(){
+    const smoothedHandPolygons = new Map();
+    const SMOOTHING = 0.58;
+
+    // 凸包算法（Graham scan 简化版）
+    function convexHull(points) {
+      const pts = points.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+      const n = pts.length;
+      if (n < 3) return pts;
+      const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+      const lower = [];
+      for (const p of pts) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+        lower.push(p);
+      }
+      const upper = [];
+      for (let i = n - 1; i >= 0; i--) {
+        const p = pts[i];
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+        upper.push(p);
+      }
+      lower.pop(); upper.pop();
+      return lower.concat(upper);
+    }
+
+    // 向外扩展凸包（围绕质心放大），让手的轮廓覆盖更充分
+    function expandHull(hull, factor = 1.18) {
+      if (hull.length === 0) return hull;
+      let cx = 0, cy = 0;
+      for (const p of hull) { cx += p.x; cy += p.y; }
+      cx /= hull.length; cy /= hull.length;
+      return hull.map(p => ({
+        x: cx + (p.x - cx) * factor,
+        y: cy + (p.y - cy) * factor,
+      }));
+    }
+
+    function resamplePolygon(points, targetCount = 16) {
+      if (points.length <= 2) return points;
+      const out = [];
+      for (let i = 0; i < targetCount; i++) {
+        const source = points[Math.floor((i / targetCount) * points.length) % points.length];
+        out.push({ x: source.x, y: source.y });
+      }
+      return out;
+    }
+
+    function smoothPolygon(id, polygon) {
+      const sampled = resamplePolygon(polygon, 16);
+      const prev = smoothedHandPolygons.get(id);
+      if (!prev || prev.length !== sampled.length) {
+        smoothedHandPolygons.set(id, sampled);
+        return sampled;
+      }
+      const next = sampled.map((point, index) => ({
+        x: prev[index].x * SMOOTHING + point.x * (1 - SMOOTHING),
+        y: prev[index].y * SMOOTHING + point.y * (1 - SMOOTHING),
+      }));
+      smoothedHandPolygons.set(id, next);
+      return next;
+    }
+
+    let handMaskCanvas = null;
+    let handSourceCanvas = null;
+
+    function ensureHandOverlayCanvas(cw, ch) {
+      if (!handMaskCanvas) handMaskCanvas = document.createElement('canvas');
+      if (!handSourceCanvas) handSourceCanvas = document.createElement('canvas');
+      if (handMaskCanvas.width !== cw || handMaskCanvas.height !== ch) {
+        handMaskCanvas.width = cw;
+        handMaskCanvas.height = ch;
+        handSourceCanvas.width = cw;
+        handSourceCanvas.height = ch;
+      }
+      return {
+        mask: handMaskCanvas,
+        source: handSourceCanvas,
+        maskCtx: handMaskCanvas.getContext('2d'),
+        sourceCtx: handSourceCanvas.getContext('2d'),
+      };
+    }
+
+    function drawRoundSegment(ctx, a, b, width) {
+      if (!a || !b) return;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+
+    function drawHandSilhouetteMask(maskCtx, hand, cw, ch) {
+      const pts = hand.map((lm) => ({ x: lm.x * cw, y: lm.y * ch }));
+      const palmWidth = Math.max(10, Math.hypot(pts[5].x - pts[17].x, pts[5].y - pts[17].y));
+      const fingerWidth = Math.max(13, palmWidth * 0.3);
+      const thumbWidth = Math.max(14, palmWidth * 0.34);
+      const jointRadius = Math.max(6, palmWidth * 0.13);
+
+      maskCtx.fillStyle = '#000';
+      maskCtx.strokeStyle = '#000';
+
+      const palm = [0, 5, 9, 13, 17].map((i) => pts[i]).filter(Boolean);
+      if (palm.length >= 3) {
+        const hull = expandHull(convexHull(palm), 1.18);
+        maskCtx.beginPath();
+        maskCtx.moveTo(hull[0].x, hull[0].y);
+        for (let i = 1; i < hull.length; i++) maskCtx.lineTo(hull[i].x, hull[i].y);
+        maskCtx.closePath();
+        maskCtx.fill();
+      }
+
+      [
+        [0, 1, 2, 3, 4],
+        [0, 5, 6, 7, 8],
+        [0, 9, 10, 11, 12],
+        [0, 13, 14, 15, 16],
+        [0, 17, 18, 19, 20],
+      ].forEach((chain, chainIndex) => {
+        const width = chainIndex === 0 ? thumbWidth : fingerWidth;
+        for (let i = 0; i < chain.length - 1; i++) {
+          drawRoundSegment(maskCtx, pts[chain[i]], pts[chain[i + 1]], width);
+        }
+      });
+
+      pts.forEach((point, idx) => {
+        if (!point) return;
+        const radius = [4, 8, 12, 16, 20].includes(idx) ? jointRadius * 1.18 : jointRadius;
+        maskCtx.beginPath();
+        maskCtx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        maskCtx.fill();
+      });
+    }
+
+    window.drawHandOverlay = function(octx, cw, ch, handsRes, videoImage) {
+      if (!handsRes.multiHandLandmarks) return;
+      const buffers = ensureHandOverlayCanvas(cw, ch);
+      const { mask, source, maskCtx, sourceCtx } = buffers;
+      maskCtx.clearRect(0, 0, cw, ch);
+      sourceCtx.clearRect(0, 0, cw, ch);
+
+      handsRes.multiHandLandmarks.forEach((hand, index) => {
+        if (!hand || hand.length < 21) return;
+        drawHandSilhouetteMask(maskCtx, hand, cw, ch);
+      });
+
+      try {
+        sourceCtx.drawImage(videoImage, 0, 0, cw, ch);
+        sourceCtx.globalCompositeOperation = 'destination-in';
+        sourceCtx.drawImage(mask, 0, 0);
+        sourceCtx.globalCompositeOperation = 'source-over';
+        octx.drawImage(source, 0, 0);
+      } catch (e) {
+        sourceCtx.globalCompositeOperation = 'source-over';
+      }
+    };
+  })();
+  </script>
+
+  <!-- ============== 扇子遮脸变脸系统 ============== -->
+  <script>
+  (function(){
+    let fanImg = new Image();
+    fanImg.src = 'shanzi2.png';
+    const FAN_SWITCH_COOLDOWN_FRAMES = 14;
+    const FAN_COVER_CONFIRM_FRAMES = 6;
+    const FAN_STABLE_CONFIRM_FRAMES = 5;
+    const FAN_MAX_MOVE_RATIO = 0.08;
+    let fanCooldownFrames = 0;
+    let fanCoverFrames = 0;
+    let fanStableFrames = 0;
+    let lastFanRawFx = null, lastFanRawFy = null;
+
+    function isFist(hand) {
+      let curled = 0;
+      if (hand[8].y > hand[6].y) curled++;
+      if (hand[12].y > hand[10].y) curled++;
+      if (hand[16].y > hand[14].y) curled++;
+      if (hand[20].y > hand[18].y) curled++;
+
+      const thumbTip = hand[4];
+      const indexMcp = hand[5];
+      const pinkyMcp = hand[17];
+      const thumbClosed = thumbTip && indexMcp && pinkyMcp
+        ? Math.hypot(thumbTip.x - indexMcp.x, thumbTip.y - indexMcp.y) <
+          Math.hypot(indexMcp.x - pinkyMcp.x, indexMcp.y - pinkyMcp.y) * 0.82
+        : true;
+
+      return curled >= 4 && thumbClosed;
+    }
+
+    function detectFan(faceLandmarks, handsRes, yaw) {
+      if (!faceLandmarks || !handsRes?.multiHandLandmarks?.length) return null;
+      if (Math.abs(yaw) > 0.55) return null;
+      const faceWidth = Math.abs(faceLandmarks[454].x - faceLandmarks[234].x);
+      for (const hand of handsRes.multiHandLandmarks) {
+        if (!isFist(hand)) continue;
+        return { fist: hand[9], wrist: hand[0], faceWidth };
+      }
+      return null;
+    }
+
+    function fanCoversFace(fx, fy, fw, fh, face, cw, ch) {
+      const l = face[234].x * cw, r = face[454].x * cw;
+      const t = face[10].y * ch, b = face[152].y * ch;
+      const ol = Math.max(fx - fw/2, l), or_ = Math.min(fx + fw/2, r);
+      const ot = Math.max(fy - fh, t), ob = Math.min(fy, b);
+      if (ol >= or_ || ot >= ob) return false;
+      return ((or_ - ol) * (ob - ot)) / ((r - l) * (b - t)) > 0.9;
+    }
+
+    // 平滑状态（去抖）
+    let smFx = null, smFy = null, smAngle = null;
+    const POS_SMOOTH = 0.62;
+    const ANGLE_SMOOTH = 0.26;
+    let fanLostFrames = 0;
+    const FAN_LOST_RESET = 8;
+
+    window.fanUpdate = function(faceLandmarks, handsRes, yaw, ctx, cw, ch) {
+      if (fanCooldownFrames > 0) fanCooldownFrames--;
+
+      const cond = detectFan(faceLandmarks, handsRes, yaw);
+      if (!cond || !fanImg.complete) {
+        fanLostFrames++;
+        fanCoverFrames = 0;
+        fanStableFrames = 0;
+        lastFanRawFx = lastFanRawFy = null;
+        if (fanLostFrames > FAN_LOST_RESET) {
+          smFx = smFy = smAngle = null;
+        }
+        return;
+      }
+      fanLostFrames = 0;
+
+      const fw = Math.max(168, cond.faceWidth * cw * 1.32);
+      const fh = fw * (fanImg.height / fanImg.width);
+      const rawFx = cond.fist.x * cw, rawFy = cond.fist.y * ch;
+      const movePx = lastFanRawFx === null ? 0 : Math.hypot(rawFx - lastFanRawFx, rawFy - lastFanRawFy);
+      const moveThreshold = Math.max(16, cond.faceWidth * cw * FAN_MAX_MOVE_RATIO);
+      const isStablePose = movePx <= moveThreshold;
+
+      if (isStablePose) {
+        fanStableFrames++;
+      } else {
+        fanStableFrames = 0;
+        fanCoverFrames = 0;
+      }
+
+      lastFanRawFx = rawFx;
+      lastFanRawFy = rawFy;
+
+      // 小臂方向
+      const dx = (cond.fist.x - cond.wrist.x) * cw;
+      const dy = (cond.fist.y - cond.wrist.y) * ch;
+      const rawAngle = Math.atan2(dy, dx) + Math.PI / 2;
+
+      // 平滑（首帧直接采用原始值）
+      if (smFx === null) {
+        smFx = rawFx; smFy = rawFy; smAngle = rawAngle;
+      } else {
+        smFx = smFx + (rawFx - smFx) * POS_SMOOTH;
+        smFy = smFy + (rawFy - smFy) * POS_SMOOTH;
+        // 角度跨 ±π 边界处理：把差值规范到 (-π, π]
+        let da = rawAngle - smAngle;
+        while (da > Math.PI) da -= 2 * Math.PI;
+        while (da < -Math.PI) da += 2 * Math.PI;
+        smAngle = smAngle + da * ANGLE_SMOOTH;
+      }
+
+      const fx = smFx, fy = smFy, angle = smAngle;
+
+      if (fanStableFrames >= FAN_STABLE_CONFIRM_FRAMES) {
+        ctx.save();
+        ctx.translate(fx, fy);
+        ctx.rotate(angle);
+        ctx.drawImage(fanImg, -fw / 2, -fh, fw, fh);
+        ctx.restore();
+      }
+
+      if (fanStableFrames >= FAN_STABLE_CONFIRM_FRAMES && fanCoversFace(fx, fy, fw, fh, faceLandmarks, cw, ch)) {
+        fanCoverFrames++;
+      } else {
+        fanCoverFrames = 0;
+      }
+
+      if (fanCooldownFrames <= 0 && fanCoverFrames >= FAN_COVER_CONFIRM_FRAMES) {
+        fanCooldownFrames = FAN_SWITCH_COOLDOWN_FRAMES;
+        fanCoverFrames = 0;
+        if (typeof switchFaceMask === 'function') switchFaceMask();
+        if (typeof detector !== 'undefined' && detector && typeof detector.startCooldown === 'function') {
+          detector.startCooldown(Math.max(detector.MASK_SWITCH_COOLDOWN_FRAMES || 18, FAN_SWITCH_COOLDOWN_FRAMES));
+        }
+      }
+    };
+  })();
+  </script>
+
+  <!-- ============== 个人脸谱陈列馆 逻辑 ============== -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+  (function(){
+    // 内存仓库：key=脸谱文件名, value=snapshot（相同脸谱覆盖，仅保存一张）
+    const isFullGalleryMode = window.__legacyMode === 'full';
+    const galleryMaxSize = isFullGalleryMode ? 12 : 6;
+    const galleryCaptureEnabled = { value: isFullGalleryMode };
+    const gallery = new Map();
+    const EXPERIENCED_MASKS_STORAGE_KEY = 'aiOperaExperiencedMasks:v1';
+    // 每张脸谱卡片的缩略图渲染器（保留引用以便 dispose）
+    const thumbCtx = new Map(); // key -> {renderer, scene, camera, mesh, texture}
+
+    const galleryOverlay = document.getElementById('galleryOverlay');
+    const galleryGrid = document.getElementById('galleryGrid');
+    const galleryHint = document.getElementById('galleryHint');
+    const viewerOverlay = document.getElementById('viewerOverlay');
+    const viewerContainer = document.getElementById('viewerContainer');
+    const viewerTitle = document.getElementById('viewerTitle');
+    const spotlightMask = document.getElementById('spotlightMask');
+
+    function isHighQualityItem(item) {
+      return !!(item && (item.type === 'hq-glb' || item.glbUrl));
+    }
+
+    function getItemTitle(item) {
+      if (item?.title) return item.title;
+      if (isHighQualityItem(item)) return '个人专属三维脸谱面罩';
+      const rawTitle = (item?.textureKey || '脸谱').replace(/\.(png|jpg|jpeg|webp)$/i,'');
+      const faceKey = window.resolveFaceKnowledgeKey ? window.resolveFaceKnowledgeKey(rawTitle) : '';
+      return window.FaceKnowledgeData?.[faceKey]?.title || rawTitle;
+    }
+
+    function getSpotlightTexturePath(item) {
+      if (!item) return '';
+      if (isHighQualityItem(item)) {
+        return item.fallbackSnapshot?.texturePath || '';
+      }
+      return item.texturePath || '';
+    }
+
+    function setSpotlightMaskFromGallery() {
+      if (!spotlightMask) return;
+      let texturePath = 'faces/关羽.png';
+      if (gallery.size > 0) {
+        const latest = Array.from(gallery.values()).slice(-1)[0];
+        texturePath = getSpotlightTexturePath(latest) || texturePath;
+      }
+      spotlightMask.src = texturePath;
+    }
+
+    function openArcGalleryPage() {
+      const href = new URL(`face_gallery_arc.html?mode=${encodeURIComponent(window.__legacyMode || 'lite')}`, window.location.href).href;
+      try {
+        window.top.location.href = href;
+      } catch (error) {
+        window.location.href = href;
+      }
+    }
+
+    function getFaceDataFromKey(textureKey) {
+      const faceKey = window.resolveFaceKnowledgeKey ? window.resolveFaceKnowledgeKey(textureKey) : String(textureKey || 'guanyu');
+      return {
+        faceKey,
+        face: window.FaceKnowledgeData?.[faceKey] || null,
+      };
+    }
+
+    function hasImagePath(value) {
+      return /\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(String(value || ''));
+    }
+
+    function normalizeFaceTexturePath(value, textureKey) {
+      const raw = String(value || '').trim();
+      if (raw && hasImagePath(raw)) return raw;
+      const { face } = getFaceDataFromKey(raw || textureKey || 'guanyu');
+      return face?.image || 'faces/关羽.png';
+    }
+
+    function getTexturePathForViewer(textureKey, item) {
+      if (item?.texturePath) return normalizeFaceTexturePath(item.texturePath, textureKey);
+      if (item?.fallbackSnapshot?.texturePath) return normalizeFaceTexturePath(item.fallbackSnapshot.texturePath, textureKey);
+      const { face } = getFaceDataFromKey(textureKey);
+      return face?.image || `faces/${textureKey || '关羽'}.png`;
+    }
+
+    function getViewerObjUrl(item) {
+      const client = window.backendMaskClient;
+      const renderer = window.personalizedRenderer || (typeof personalizedRenderer !== 'undefined' ? personalizedRenderer : null);
+      let cache = client?.personalObjCache || null;
+      if (!cache && typeof client?.loadPersonalObjCache === 'function') {
+        try {
+          cache = client.loadPersonalObjCache();
+        } catch (error) {
+          cache = null;
+        }
+      }
+      return item?.objUrl || cache?.objUrl || renderer?.personalObjUrl || '/generated_masks/autodl_user_001/personal_face.obj';
+    }
+
+    function readStoredExperiencedFaces() {
+      try {
+        const raw = window.localStorage?.getItem(EXPERIENCED_MASKS_STORAGE_KEY)
+          || window.sessionStorage?.getItem(EXPERIENCED_MASKS_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function writeStoredExperiencedFaces(entries) {
+      const normalized = Array.isArray(entries) ? entries.slice(-24) : [];
+      const text = JSON.stringify(normalized);
+      try {
+        window.localStorage?.setItem(EXPERIENCED_MASKS_STORAGE_KEY, text);
+      } catch (error) {
+        // Local storage may be disabled in privacy mode.
+      }
+      try {
+        window.sessionStorage?.setItem(EXPERIENCED_MASKS_STORAGE_KEY, text);
+      } catch (error) {
+        // Session storage is only a fallback.
+      }
+    }
+
+    function normalizeExperiencedFaceEntry(entry) {
+      if (!entry) return null;
+      const textureKey = getKnowledgeTextureKey(entry);
+      const { faceKey, face } = getFaceDataFromKey(textureKey);
+      const texturePath = getTexturePathForViewer(textureKey, entry);
+      return {
+        faceKey,
+        faceTitle: entry.faceTitle || entry.title || face?.title || getItemTitle(entry) || '脸谱',
+        role: entry.role || face?.role || '',
+        objUrl: getViewerObjUrl(entry),
+        texturePath,
+        source: entry.source || 'stage-used-facepaint',
+        manifestUrl: entry.manifestUrl || '',
+        normalMapUrl: entry.normalMapUrl || '',
+        captureManifest: entry.captureManifest || null,
+        assetManifest: entry.assetManifest || null,
+        timestamp: Number(entry.timestamp || Date.now()),
+      };
+    }
+
+    function mergeExperiencedFaceRecords(records) {
+      const entries = new Map();
+      const addRecord = (entry) => {
+        const record = normalizeExperiencedFaceEntry(entry);
+        if (!record) return;
+        const key = `${record.faceKey}|${record.texturePath}`;
+        const existing = entries.get(key);
+        entries.set(key, {
+          ...(existing || {}),
+          ...record,
+          timestamp: Math.max(Number(existing?.timestamp || 0), Number(record.timestamp || Date.now())),
+        });
+      };
+
+      readStoredExperiencedFaces().forEach(addRecord);
+      (Array.isArray(records) ? records : [records]).forEach(addRecord);
+
+      const merged = Array.from(entries.values()).sort((a, b) => a.timestamp - b.timestamp);
+      writeStoredExperiencedFaces(merged);
+      return merged;
+    }
+
+    function persistExperiencedFace(item) {
+      return mergeExperiencedFaceRecords(item).slice(-1)[0] || null;
+    }
+
+    function getExperiencedFacesForViewer(currentItem) {
+      const client = window.backendMaskClient;
+      const entries = new Map();
+      const addEntry = (entry) => {
+        if (!entry) return;
+        const textureKey = getKnowledgeTextureKey(entry);
+        const { faceKey, face } = getFaceDataFromKey(textureKey);
+        const texturePath = getTexturePathForViewer(textureKey, entry);
+        const key = `${faceKey}|${texturePath}`;
+        const existing = entries.get(key);
+        entries.set(key, {
+          ...(existing || {}),
+          faceKey,
+          faceTitle: face?.title || getItemTitle(entry) || '脸谱',
+          role: face?.role || '',
+          objUrl: getViewerObjUrl(entry),
+          texturePath,
+          source: entry.source || '3ddfa-v3-personal-obj',
+          manifestUrl: entry.manifestUrl || '',
+          normalMapUrl: entry.normalMapUrl || '',
+          captureManifest: entry.captureManifest || null,
+          timestamp: Math.max(Number(existing?.timestamp || 0), Number(entry.timestamp || Date.now())),
+        });
+      };
+
+      readStoredExperiencedFaces().forEach(addEntry);
+      gallery.forEach(addEntry);
+      addEntry(currentItem);
+
+      if (!entries.size) {
+        const textureKey = typeof client?.getTextureKey === 'function' ? client.getTextureKey() : 'guanyu';
+        addEntry({ textureKey, source: 'current-runtime-face', timestamp: Date.now() });
+      }
+
+      return Array.from(entries.values()).sort((a, b) => a.timestamp - b.timestamp);
+    }
+
+    function buildPersonalModelViewerPayload(item) {
+      const client = window.backendMaskClient;
+      const textureKey = getKnowledgeTextureKey(item || {
+        textureKey: typeof client?.getTextureKey === 'function' ? client.getTextureKey() : 'guanyu',
+      });
+      const { faceKey, face } = getFaceDataFromKey(textureKey);
+      return {
+        title: '个人专属三维脸谱面罩',
+        faceKey,
+        faceTitle: face?.title || getItemTitle(item) || '脸谱',
+        role: face?.role || '',
+        objUrl: getViewerObjUrl(item),
+        texturePath: getTexturePathForViewer(textureKey, item),
+        experiencedFaces: getExperiencedFacesForViewer(item),
+        source: item?.source || '3ddfa-v3-personal-obj',
+        manifestUrl: item?.manifestUrl || '',
+        normalMapUrl: item?.normalMapUrl || '',
+        captureManifest: item?.captureManifest || null,
+        mode: window.__legacyMode || 'lite',
+        timestamp: Date.now(),
+      };
+    }
+
+    function persistPersonalModelViewerPayload(item) {
+      const payload = buildPersonalModelViewerPayload(item);
+      window.__latestPersonalModelViewerPayload = payload;
+      mergeExperiencedFaceRecords(payload.experiencedFaces || [payload]);
+      try {
+        sessionStorage.setItem('personalModelViewerPayload:v1', JSON.stringify(payload));
+      } catch (error) {
+        // The viewer can still use URL parameters if storage is unavailable.
+      }
+      return payload;
+    }
+
+    async function openPersonalModelViewer(item) {
+      const payload = persistPersonalModelViewerPayload(item || window.__latestGalleryModelItem || null);
+      try {
+        await window.backendMaskClient?.warmPersonalObjCache?.({ objUrl: payload.objUrl }, { refresh: true });
+      } catch (error) {
+        // The viewer still has its own cache-first loader.
+      }
+      const href = new URL('/personal_model_viewer.html', window.location.origin);
+      href.searchParams.set('face', payload.faceKey || 'guanyu');
+      href.searchParams.set('obj', payload.objUrl || '');
+      href.searchParams.set('texture', payload.texturePath || '');
+      if (payload.manifestUrl) href.searchParams.set('manifest', payload.manifestUrl);
+      href.searchParams.set('mode', window.__legacyMode || 'lite');
+      try {
+        window.top.location.href = href.href;
+      } catch (error) {
+        window.location.href = href.href;
+      }
+    }
+
+    window.__recordExperiencedMask = function(recordInput) {
+      const renderer = window.personalizedRenderer || (typeof personalizedRenderer !== 'undefined' ? personalizedRenderer : null);
+      const list = renderer?.faceTextureList || [];
+      const currentKey = list[renderer?.currentTextureIndex || 0] || 'guanyu';
+      const base = typeof recordInput === 'string'
+        ? { textureKey: recordInput }
+        : { ...(recordInput || {}) };
+      const textureKey = base.textureKey || currentKey;
+      let entry = {
+        ...base,
+        textureKey,
+        source: base.source || 'stage-used-facepaint',
+        timestamp: Number(base.timestamp || Date.now()),
+      };
+
+      if (renderer?.isInitialized && typeof renderer.captureSnapshot === 'function') {
+        try {
+          const snap = renderer.captureSnapshot(textureKey, { allowHidden: true });
+          if (snap) entry = { ...snap, ...entry, texturePath: snap.texturePath || entry.texturePath };
+        } catch (error) {
+          // Lightweight face records are enough for the model page fallback.
+        }
+      }
+
+      persistExperiencedFace(entry);
+      window.__latestGalleryModelItem = entry;
+      persistPersonalModelViewerPayload(entry);
+      return entry;
+    };
+
+    window.__openPersonalModelViewer = () => openPersonalModelViewer();
+
+    function getKnowledgeTextureKey(item) {
+      const raw = item?.textureKey
+        || item?.fallbackSnapshot?.textureKey
+        || item?.faceKey
+        || item?.texturePath
+        || item?.faceTitle
+        || getItemTitle(item);
+      return window.resolveFaceKnowledgeKey ? window.resolveFaceKnowledgeKey(raw) : String(raw || 'guanyu').replace(/\.(png|jpg|jpeg|webp)$/i, '');
+    }
+
+    function openKnowledgePage(item, event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const faceKey = getKnowledgeTextureKey(item);
+      const title = getItemTitle(item);
+      const href = new URL(`face_knowledge.html?face=${encodeURIComponent(faceKey)}&title=${encodeURIComponent(title)}`, window.location.href).href;
+      try {
+        window.top.location.href = href;
+      } catch (error) {
+        window.location.href = href;
+      }
+    }
+
+    function addGalleryItem(item) {
+      if (!item) return;
+      const key = isHighQualityItem(item)
+        ? `hq-glb:${item.textureKey || 'mask'}:${item.timestamp || Date.now()}`
+        : (item.textureKey || `snapshot:${item.timestamp || Date.now()}`);
+      gallery.set(key, item);
+      window.__latestGalleryModelItem = item;
+      persistPersonalModelViewerPayload(item);
+      const gridStage = document.getElementById('galleryGridStage');
+      if (gridStage && gridStage.style.display !== 'none') {
+        renderGalleryGrid();
+      }
+    }
+
+    function disposeMaterial(material) {
+      if (!material) return;
+      const disposeTexture = (tex) => {
+        if (tex && typeof tex.dispose === 'function') tex.dispose();
+      };
+      const disposeOne = (mat) => {
+        [
+          'map', 'alphaMap', 'aoMap', 'bumpMap', 'displacementMap',
+          'emissiveMap', 'envMap', 'lightMap', 'metalnessMap',
+          'normalMap', 'roughnessMap',
+        ].forEach((key) => disposeTexture(mat[key]));
+        if (typeof mat.dispose === 'function') mat.dispose();
+      };
+      if (Array.isArray(material)) {
+        material.forEach(disposeOne);
+      } else {
+        disposeOne(material);
+      }
+    }
+
+    function disposeObject3D(object) {
+      if (!object) return;
+      object.traverse((child) => {
+        if (child.geometry && typeof child.geometry.dispose === 'function') {
+          child.geometry.dispose();
+        }
+        if (child.material) disposeMaterial(child.material);
+      });
+    }
+
+    function disposeViewerContext(ctx) {
+      if (!ctx) return;
+      if (ctx.stopFlag) ctx.stopFlag.value = true;
+      if (ctx.controls && typeof ctx.controls.dispose === 'function') ctx.controls.dispose();
+      if (ctx.scene) disposeObject3D(ctx.scene);
+      if (ctx.texture && typeof ctx.texture.dispose === 'function') ctx.texture.dispose();
+      if (ctx.renderer) {
+        ctx.renderer.dispose();
+        if (typeof ctx.renderer.forceContextLoss === 'function') {
+          ctx.renderer.forceContextLoss();
+        }
+      }
+    }
+
+    // 定时自动入藏（每 1.5s 尝试一次）
+    setInterval(() => {
+      try {
+        if (!galleryCaptureEnabled.value || document.hidden) return;
+        if (!window.personalizedRenderer || !personalizedRenderer.isInitialized) return;
+        if (!personalizedRenderer.faceMesh || !personalizedRenderer.faceMesh.visible) return;
+        const snap = personalizedRenderer.captureSnapshot();
+        if (!snap) return;
+        if (!gallery.has(snap.textureKey) && gallery.size >= galleryMaxSize) return;
+        // 相同脸谱覆盖（保证每张脸谱只保存一个）
+        addGalleryItem(snap);
+      } catch(e) { /* ignore */ }
+    }, isFullGalleryMode ? 1800 : 4500);
+
+    // 打开陈列馆
+    document.getElementById('galleryBtn').addEventListener('click', () => {
+      galleryCaptureEnabled.value = true;
+      openGallery();
+    });
+    document.getElementById('galleryCloseBtn').addEventListener('click', () => {
+      closeGallery();
+    });
+    document.getElementById('galleryCloseBtnTop').addEventListener('click', () => {
+      closeGallery();
+    });
+    document.getElementById('viewerCloseBtn').addEventListener('click', () => {
+      closeViewer();
+    });
+    // 聚光灯下脸谱点击 → 跳转到弧形陈列页
+    document.getElementById('spotlightTarget').addEventListener('click', () => {
+      openArcGalleryPage();
+    });
+    // 陈列网格 → 返回聚光灯
+    document.getElementById('galleryBackToSpotlight').addEventListener('click', () => {
+      // 清掉缩略图避免内存泄漏
+      thumbCtx.forEach(c => { if (c.stopFlag) c.stopFlag.value = true; if (c.renderer) c.renderer.dispose(); });
+      thumbCtx.clear();
+      document.getElementById('galleryGrid').innerHTML = '';
+      document.getElementById('galleryGridStage').style.display = 'none';
+      document.getElementById('gallerySpotlightStage').style.display = '';
+      setSpotlightMaskFromGallery();
+    });
+
+    function openGallery() {
+      galleryOverlay.style.display = 'block';
+      // 默认进入聚光灯阶段
+      document.getElementById('gallerySpotlightStage').style.display = '';
+      document.getElementById('galleryGridStage').style.display = 'none';
+      setSpotlightMaskFromGallery();
+    }
+    function closeGallery() {
+      galleryOverlay.style.display = 'none';
+      // 停止缩略图渲染循环（移除引用，允许 GC；OrbitControls 在详情页单独处理）
+      thumbCtx.forEach(ctx => {
+        if (ctx.stopFlag) ctx.stopFlag.value = true;
+        if (ctx.renderer) { ctx.renderer.dispose(); }
+      });
+      thumbCtx.clear();
+      galleryGrid.innerHTML = '';
+      // 复位至聚光灯阶段，下次打开仍是聚光灯先
+      document.getElementById('gallerySpotlightStage').style.display = '';
+      document.getElementById('galleryGridStage').style.display = 'none';
+    }
+
+    function renderGalleryGrid() {
+      galleryGrid.innerHTML = '';
+      if (gallery.size === 0) {
+        galleryHint.style.display = 'block';
+        return;
+      }
+      galleryHint.style.display = 'none';
+
+      // 按时间升序（先入藏的排前）
+      const entries = Array.from(gallery.values()).sort((a,b) => a.timestamp - b.timestamp);
+      for (const snap of entries) {
+        const isHq = isHighQualityItem(snap);
+        const card = document.createElement('div');
+        card.style.cssText = isHq
+          ? 'background:linear-gradient(145deg,rgba(10,42,72,0.72),rgba(255,248,220,0.06));border:1px solid rgba(127,229,255,0.5);border-radius:12px;padding:12px;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;'
+          : 'background:rgba(255,248,220,0.06);border:1px solid rgba(212,175,55,0.45);border-radius:12px;padding:12px;cursor:pointer;transition:transform 0.2s, box-shadow 0.2s;';
+        card.onmouseenter = () => { card.style.transform='translateY(-4px)'; card.style.boxShadow='0 10px 30px rgba(255,215,0,0.25)'; };
+        card.onmouseleave = () => { card.style.transform=''; card.style.boxShadow=''; };
+        card.onclick = () => openViewer(snap);
+
+        const thumbBox = document.createElement('div');
+        thumbBox.style.cssText = 'width:100%;aspect-ratio:1/1;background:#000;border-radius:8px;overflow:hidden;position:relative;';
+        const label = document.createElement('div');
+        label.style.cssText = 'margin-top:8px;color:#ffd700;text-align:center;font-family:"KaiTi",serif;font-size:15px;letter-spacing:2px;';
+        label.textContent = getItemTitle(snap);
+        const techLine = document.createElement('div');
+        techLine.style.cssText = 'display:none;margin-top:6px;color:rgba(224,245,255,0.74);text-align:center;font-size:12px;line-height:1.4;letter-spacing:1px;';
+        const moreBtn = document.createElement('button');
+        moreBtn.type = 'button';
+        moreBtn.textContent = '了解更多';
+        moreBtn.style.cssText = 'width:100%;margin-top:10px;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,224,135,0.52);background:linear-gradient(135deg,rgba(110,22,12,0.82),rgba(45,16,6,0.9));color:#ffe08a;font-size:14px;letter-spacing:3px;font-family:"KaiTi",serif;cursor:pointer;';
+        moreBtn.onmouseenter = () => { moreBtn.style.background = 'linear-gradient(135deg,rgba(150,32,16,0.92),rgba(74,22,8,0.95))'; };
+        moreBtn.onmouseleave = () => { moreBtn.style.background = 'linear-gradient(135deg,rgba(110,22,12,0.82),rgba(45,16,6,0.9))'; };
+        moreBtn.onclick = (event) => openKnowledgePage(snap, event);
+
+        if (isHq) {
+          const badge = document.createElement('div');
+          badge.textContent = '个人专属三维脸谱面罩';
+          badge.style.cssText = 'position:absolute;left:10px;top:10px;padding:5px 9px;border:1px solid rgba(255,230,163,0.48);border-radius:999px;background:rgba(5,18,35,0.78);color:#fff0b7;font-size:12px;letter-spacing:1px;z-index:2;';
+          thumbBox.appendChild(badge);
+        }
+
+        card.appendChild(thumbBox);
+        card.appendChild(label);
+        card.appendChild(techLine);
+        card.appendChild(moreBtn);
+        galleryGrid.appendChild(card);
+
+        if (isHq) {
+          const selectedCount = snap.captureManifest?.selectedFrameCount || 0;
+          const coverage = (snap.captureManifest?.poseCoverage || []).join('/');
+          techLine.style.display = '';
+          techLine.textContent = selectedCount
+            ? `筛选 ${selectedCount} 帧${coverage ? ` · ${coverage}` : ''}${snap.normalMapUrl ? ' · 法线图' : ''}`
+            : `GLB 资产${snap.manifestUrl ? ' · manifest' : ''}${snap.normalMapUrl ? ' · 法线图' : ''}`;
+          renderHighQualityPlaceholder(thumbBox, snap);
+        } else {
+          // 渲染该脸谱的 3D 缩略图（静态，不允许旋转）
+          renderThumbnail(thumbBox, snap, false);
+        }
+      }
+    }
+
+    function renderHighQualityPlaceholder(container, item) {
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;background:radial-gradient(circle at 50% 32%,rgba(127,229,255,0.24),transparent 34%),linear-gradient(145deg,#04121f,#11131d 58%,#2d2108);color:#fff3bf;font-family:"KaiTi",serif;letter-spacing:2px;';
+      placeholder.innerHTML = '<div><div style="font-size:42px;line-height:1;margin-bottom:14px;color:#8feaff;">◇</div><div style="font-size:18px;font-weight:700;">个人专属三维脸谱面罩</div><div style="margin-top:8px;font-size:12px;color:rgba(255,243,191,0.72);">点击查看三维模型</div></div>';
+      container.appendChild(placeholder);
+    }
+
+    function createAlignedFacepaintTextureFromImage(image) {
+      if (!image || !THREE?.CanvasTexture) return null;
+      const size = 1024;
+      const fit = { scaleX: 1.16, scaleY: 1.06, offsetX: 0, offsetY: -0.035 };
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      const baseScale = Math.min(size / image.width, size / image.height);
+      const width = image.width * baseScale * fit.scaleX;
+      const height = image.height * baseScale * fit.scaleY;
+      const x = (size - width) * 0.5 + size * fit.offsetX;
+      const y = (size - height) * 0.5 + size * fit.offsetY;
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(image, x, y, width, height);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.flipY = false;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    // 创建一个 OBJ 网格组（外凸面贴脸谱，内凹面纯白）
+    function buildMeshFromSnapshot(snap, onReady) {
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(snap.positions.slice(), 3));
+      geom.setAttribute('uv', new THREE.BufferAttribute(snap.uvs.slice(), 2));
+      geom.setIndex(new THREE.BufferAttribute(snap.indices.slice(), 1));
+      geom.computeVertexNormals();
+
+      const loader = new THREE.TextureLoader();
+      loader.load(snap.texturePath, (tex) => {
+        const alignedTex = createAlignedFacepaintTextureFromImage(tex.image);
+        if (alignedTex) {
+          tex.dispose();
+          tex = alignedTex;
+        } else {
+          tex.flipY = false;
+        }
+
+        // 外凸面：贴脸谱
+        const matFront = new THREE.MeshStandardMaterial({
+          map: tex, transparent: true, alphaTest: 0.1,
+          side: THREE.FrontSide, roughness: 0.6, metalness: 0.1,
+        });
+        const meshFront = new THREE.Mesh(geom, matFront);
+
+        // 内凹面：纯白
+        const matBack = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          side: THREE.BackSide,
+          roughness: 0.85, metalness: 0.0,
+        });
+        const meshBack = new THREE.Mesh(geom, matBack);
+
+        const group = new THREE.Group();
+        group.add(meshBack);
+        group.add(meshFront);
+        // 把 boundingBox 和 geometry 暴露在 group 上，便于上层居中逻辑访问
+        group.geometry = geom;
+        onReady(group, tex);
+      }, undefined, (err) => {
+        const matFront = new THREE.MeshStandardMaterial({ color: 0xcc8844, side: THREE.FrontSide });
+        const matBack = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide });
+        const group = new THREE.Group();
+        group.add(new THREE.Mesh(geom, matBack));
+        group.add(new THREE.Mesh(geom, matFront));
+        group.geometry = geom;
+        onReady(group, null);
+      });
+    }
+
+    function renderThumbnail(container, snap, interactive) {
+      const w = container.clientWidth || 200;
+      const h = container.clientHeight || 200;
+      const scene = new THREE.Scene();
+      scene.background = null;
+      const camera = new THREE.PerspectiveCamera(35, w/h, 0.01, 10);
+      camera.position.set(0, 0, 1.1);
+      // 性能优化：交互模式开抗锯齿但限制 pixelRatio；缩略图模式不开抗锯齿
+      const renderer = new THREE.WebGLRenderer({ antialias: interactive, alpha: true, powerPreference: 'high-performance' });
+      const dpr = Math.min(window.devicePixelRatio || 1, interactive ? 1.5 : 1);
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(w, h);
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(1,1,2); scene.add(dl);
+
+      const stopFlag = { value: false };
+      const ctx = { renderer, scene, camera, mesh: null, texture: null, stopFlag };
+      thumbCtx.set(snap.textureKey + '@' + Math.random(), ctx);
+
+      buildMeshFromSnapshot(snap, (mesh, tex) => {
+        // 根据顶点范围自动居中 & 适配
+        mesh.geometry.computeBoundingBox();
+        const bb = mesh.geometry.boundingBox;
+        const cx = (bb.min.x + bb.max.x) / 2;
+        const cy = (bb.min.y + bb.max.y) / 2;
+        const cz = (bb.min.z + bb.max.z) / 2;
+        mesh.position.set(-cx, -cy, -cz);
+        const size = Math.max(bb.max.x-bb.min.x, bb.max.y-bb.min.y, bb.max.z-bb.min.z) || 1;
+        const dist = size * 1.9;
+        camera.position.set(0, 0, dist);
+        camera.near = dist/100; camera.far = dist*100; camera.updateProjectionMatrix();
+
+        scene.add(mesh);
+        ctx.mesh = mesh; ctx.texture = tex;
+
+        if (interactive) {
+          const controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.08;
+          controls.target.set(0,0,0);
+          controls.update();
+          ctx.controls = controls;
+
+          function animate() {
+            if (stopFlag.value) return;
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+          }
+          animate();
+        } else {
+          // 静态缩略图：只渲染一次
+          renderer.render(scene, camera);
+        }
+      });
+
+      return ctx;
+    }
+
+    function showHighQualityUnavailable(container, item) {
+      container.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center;color:#fff3bf;font-family:"KaiTi",serif;background:radial-gradient(circle at center,rgba(127,229,255,0.08),transparent 42%);';
+      const box = document.createElement('div');
+      box.style.cssText = 'max-width:520px;padding:26px 30px;border:1px solid rgba(127,229,255,0.34);border-radius:16px;background:rgba(5,18,35,0.78);box-shadow:0 20px 70px rgba(0,0,0,0.42);';
+      const title = document.createElement('div');
+      title.textContent = '三维脸谱面罩暂不可用';
+      title.style.cssText = 'font-size:28px;font-weight:800;letter-spacing:4px;color:#fff0b7;margin-bottom:12px;';
+      const body = document.createElement('div');
+      body.textContent = item && item.fallbackSnapshot ? '可以使用实时三维脸谱快照继续查看。' : '当前暂无可回退的实时三维脸谱快照。';
+      body.style.cssText = 'font-size:15px;letter-spacing:1px;color:rgba(255,243,191,0.78);line-height:1.8;';
+      box.appendChild(title);
+      box.appendChild(body);
+      if (item && item.fallbackSnapshot) {
+        const fallbackBtn = document.createElement('button');
+        fallbackBtn.textContent = '使用实时快照查看';
+        fallbackBtn.style.cssText = 'margin-top:18px;background:linear-gradient(135deg,#1a6b95,#d4af37);color:#071626;border:1px solid rgba(255,230,163,0.5);font-weight:800;';
+        fallbackBtn.onclick = () => openViewer(item.fallbackSnapshot);
+        box.appendChild(fallbackBtn);
+      }
+      wrap.appendChild(box);
+      container.appendChild(wrap);
+    }
+
+    function fitObjectToCamera(object, camera, controls) {
+      const box = new THREE.Box3().setFromObject(object);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      object.position.sub(center);
+      const maxSize = Math.max(size.x, size.y, size.z) || 1;
+      const dist = maxSize * 2.2;
+      camera.position.set(0, maxSize * 0.08, dist);
+      camera.near = dist / 100;
+      camera.far = dist * 100;
+      camera.updateProjectionMatrix();
+      if (controls) {
+        controls.target.set(0, 0, 0);
+        controls.update();
+      }
+    }
+
+    function renderHighQualityViewer(container, item) {
+      const stopFlag = { value: false };
+      const ctx = { renderer: null, scene: null, camera: null, controls: null, stopFlag };
+      container.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff3bf;font-family:KaiTi,serif;letter-spacing:4px;">个人专属三维脸谱面罩加载中</div>';
+
+      if (!item || !item.glbUrl || !THREE.GLTFLoader) {
+        showHighQualityUnavailable(container, item);
+        return ctx;
+      }
+
+      const loader = new THREE.GLTFLoader();
+      loader.load(item.glbUrl, (gltf) => {
+        if (stopFlag.value) {
+          disposeObject3D(gltf.scene);
+          return;
+        }
+
+        const w = container.clientWidth || window.innerWidth || 800;
+        const h = container.clientHeight || window.innerHeight || 600;
+        const scene = new THREE.Scene();
+        scene.background = null;
+        const camera = new THREE.PerspectiveCamera(35, w / h, 0.01, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+        renderer.setSize(w, h);
+        container.innerHTML = '';
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        const keyLight = new THREE.DirectionalLight(0xffffff, 0.78);
+        keyLight.position.set(1.2, 1.4, 2.2);
+        scene.add(keyLight);
+        const rimLight = new THREE.DirectionalLight(0x8feaff, 0.36);
+        rimLight.position.set(-1.5, 0.6, -1.5);
+        scene.add(rimLight);
+
+        const model = gltf.scene || gltf.scenes?.[0];
+        if (!model) {
+          renderer.dispose();
+          if (typeof renderer.forceContextLoss === 'function') renderer.forceContextLoss();
+          showHighQualityUnavailable(container, item);
+          return;
+        }
+
+        const group = new THREE.Group();
+        group.add(model);
+        scene.add(group);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.enableZoom = true;
+        controls.enableRotate = true;
+        fitObjectToCamera(group, camera, controls);
+
+        ctx.renderer = renderer;
+        ctx.scene = scene;
+        ctx.camera = camera;
+        ctx.controls = controls;
+        ctx.mesh = group;
+
+        function animate() {
+          if (stopFlag.value) return;
+          requestAnimationFrame(animate);
+          group.rotation.y += 0.0035;
+          controls.update();
+          renderer.render(scene, camera);
+        }
+        animate();
+      }, undefined, () => {
+        if (!stopFlag.value) showHighQualityUnavailable(container, item);
+      });
+
+      return ctx;
+    }
+
+    let viewerCtx = null;
+    function openViewer(snap) {
+      viewerTitle.textContent = '🎭 ' + getItemTitle(snap);
+      viewerOverlay.style.display = 'block';
+      if (viewerCtx) {
+        disposeViewerContext(viewerCtx);
+        viewerCtx = null;
+      }
+      // 暂停 / 释放所有缩略图渲染器，释放 WebGL 上下文给 360 查看器
+      thumbCtx.forEach(c => { if (c.stopFlag) c.stopFlag.value = true; if (c.renderer) c.renderer.dispose(); });
+      // 等 overlay 显示后测量尺寸
+      setTimeout(() => {
+        viewerCtx = isHighQualityItem(snap)
+          ? renderHighQualityViewer(viewerContainer, snap)
+          : renderThumbnail(viewerContainer, snap, true /* 允许360旋转 */);
+      }, 500);
+    }
+    function closeViewer() {
+      viewerOverlay.style.display = 'none';
+      if (viewerCtx) {
+        disposeViewerContext(viewerCtx);
+        viewerContainer.innerHTML = '';
+        viewerCtx = null;
+      }
+      // 返回陈列馆时重新渲染缩略图（之前为节省 WebGL 上下文已释放）
+      thumbCtx.clear();
+      if (document.getElementById('galleryGridStage').style.display !== 'none') {
+        renderGalleryGrid();
+      }
+    }
+
+    window.__addDemoHighQualityMask = function() {
+      const fallbackSnapshot = window.__lastHqMaskFallback?.fallbackSnapshot || null;
+      const item = {
+        type: 'hq-glb',
+        title: '个人专属三维脸谱面罩',
+        textureKey: 'guanyu',
+        glbUrl: '/generated_masks/demo_guanyu_mask.glb',
+        fallbackSnapshot,
+        source: 'snapshot-obj',
+        timestamp: Date.now(),
+      };
+      addGalleryItem(item);
+      return item;
+    };
+
+    if (window.BackendMaskClient) {
+      window.backendMaskClient = new window.BackendMaskClient({
+        personalizedRenderer: () => window.personalizedRenderer || (typeof personalizedRenderer !== 'undefined' ? personalizedRenderer : null),
+        getCurrentTextureKey: () => {
+          const renderer = window.personalizedRenderer || (typeof personalizedRenderer !== 'undefined' ? personalizedRenderer : null);
+          const list = renderer?.faceTextureList || [];
+          const key = list[renderer?.currentTextureIndex || 0] || 'guanyu';
+          return String(key).replace(/\.(png|jpg|jpeg|webp)$/i, '');
+        },
+        getCurrentLandmarks: () => {
+          try {
+            return faceMeshResults?.multiFaceLandmarks?.[0] || null;
+          } catch (error) {
+            return null;
+          }
+        },
+        addToGallery: addGalleryItem,
+        updateStatusPanel: (event) => window.__hqMaskStatusPanel?.update(event),
+        log: (message, type) => {
+          if (typeof addLog === 'function') addLog(message, type);
+        },
+      });
+
+      const hiFiMaskBtn = document.getElementById('hiFiMaskBtn');
+      if (hiFiMaskBtn) {
+        hiFiMaskBtn.addEventListener('click', () => {
+          window.backendMaskClient.startDemoGeneration();
+        });
+      }
+    }
+
+    // 暴露以便 personalizedRenderer 初始化后仍能访问
+    window.__faceGallery = gallery;
+    window.setTimeout(() => {
+      const renderer = window.personalizedRenderer || (typeof personalizedRenderer !== 'undefined' ? personalizedRenderer : null);
+      const key = renderer?.faceTextureList?.[renderer?.currentTextureIndex || 0] || 'guanyu';
+      if (key && typeof window.__recordExperiencedMask === 'function') {
+        window.__recordExperiencedMask({
+          textureKey: key,
+          source: 'stage-initial-facepaint',
+          timestamp: Date.now(),
+        });
+      }
+    }, 900);
+  })();
+  </script>
+  <script>
+  (function () {
+    const panelButton = document.getElementById('gestureDatasetBtn');
+    const panel = document.getElementById('gestureDatasetPanel');
+    const labelSelect = document.getElementById('gestureDatasetLabel');
+    const startButton = document.getElementById('gestureDatasetStartBtn');
+    const stopButton = document.getElementById('gestureDatasetStopBtn');
+    const exportButton = document.getElementById('gestureDatasetExportBtn');
+    const reportButton = document.getElementById('gestureDatasetReportBtn');
+    const clearButton = document.getElementById('gestureDatasetClearBtn');
+    const status = document.getElementById('gestureDatasetStatus');
+    const counts = document.getElementById('gestureDatasetCounts');
+    const quality = document.getElementById('gestureDatasetQuality');
+    const guide = document.getElementById('gestureDatasetGuide');
+    const feedback = document.getElementById('gestureDatasetFeedback');
+    const recorder = window.aiOperaGestureDatasetRecorder;
+    const labelNames = {
+      vertical_swipe: '纵向挥手',
+      cover_face: '遮脸',
+      head_shake: '左右转头',
+      head_nod: '点头',
+      raise_hand: '举手',
+      idle: '静止',
+    };
+
+    function renderGestureGuide(label) {
+      if (!guide) return;
+      const standards = window.AIOperaGestureDatasetStandards || {};
+      const standard = standards[label] || standards.vertical_swipe;
+      if (!standard) {
+        guide.textContent = '';
+        return;
+      }
+      guide.innerHTML = `<strong>${standard.name}</strong>：${standard.instruction}<span>判定参考：${standard.success}</span>`;
+    }
+
+    function renderGestureFeedback(event) {
+      if (!feedback) return;
+      feedback.classList.remove('is-warning', 'is-success');
+      if (!event) {
+        feedback.innerHTML = '<strong>采集提示</strong>：打开摄像头后，选择一个标签，点击“开始采集”，完成动作后点击“停止保存”。';
+        return;
+      }
+      if (event.type === 'sample_started') {
+        const standard = event.standard || {};
+        feedback.innerHTML = `<strong>正在采集 ${standard.name || labelNames[event.label] || event.label}</strong>：${standard.instruction || '按当前标签完成动作。'}`;
+        return;
+      }
+      if (event.type === 'sample_discarded') {
+        feedback.classList.add('is-warning');
+        feedback.innerHTML = `<strong>这一段没有保存</strong>：只有 ${event.frameCount} 帧，至少需要 ${event.minValidFrames} 帧。动作保持 1-3 秒再停止。`;
+        return;
+      }
+      if (event.type === 'dataset_cleared') {
+        feedback.innerHTML = '<strong>本地样本已清空</strong>：可以重新按类别采集。';
+        return;
+      }
+      if (event.type === 'sample_saved') {
+        const name = labelNames[event.label] || event.label;
+        const quality = event.quality || {};
+        const warnings = quality.warnings || [];
+        const classDone = event.targetReached ? ` ${name} 已达到 ${event.targetPerLabel} 段。` : '';
+        const allDone = event.readyForTraining ? ' 全部类别已达到基础训练条件。' : '';
+        feedback.classList.add(warnings.length ? 'is-warning' : 'is-success');
+        feedback.innerHTML = `<strong>已保存 1 段 ${name}</strong>：${event.frameCount} 帧，本类 ${event.labelCount}/${event.targetPerLabel} 段。${classDone}${allDone}${warnings.length ? `<span>建议复查：${warnings.slice(0, 3).join('；')}</span>` : '<span>这一段动作质量通过软质检。</span>'}`;
+      }
+    }
+
+    function renderGestureDatasetState(state) {
+      if (!status || !counts || !quality) return;
+      const label = state.activeLabel ? ` · ${state.activeLabel}` : '';
+      const readyCount = state.readyLabels?.length || 0;
+      const target = state.targetPerLabel || 30;
+      const labels = window.AIOperaGestureDatasetLabels || ['vertical_swipe', 'cover_face', 'head_shake', 'head_nod', 'raise_hand', 'idle'];
+      status.textContent = state.active
+        ? `采集中${label} · ${state.activeFrames} 帧`
+        : `已保存 ${state.totalSamples} 段样本 · ${readyCount}/${state.labelCount || labels.length} 类达到 ${target} 段`;
+      counts.innerHTML = '';
+      labels.forEach((item) => {
+        const chip = document.createElement('span');
+        const count = state.byLabel[item] || 0;
+        if (count >= target) chip.classList.add('is-ready');
+        chip.textContent = `${labelNames[item] || item}: ${count}/${target}`;
+        counts.appendChild(chip);
+      });
+      quality.innerHTML = '';
+      const summary = document.createElement('div');
+      const frameAvg = state.frameStats?.avg || 0;
+      const readyText = state.readyForTraining ? '已达到基础训练条件' : '还需要补采样本';
+      summary.innerHTML = `<strong>${readyText}</strong> · 平均 ${frameAvg} 帧/段 · 最短 ${state.frameStats?.min || 0} 帧 · 最长 ${state.frameStats?.max || 0} 帧`;
+      quality.appendChild(summary);
+      const warnings = state.qualityWarnings || [];
+      if (warnings.length) {
+        const list = document.createElement('ul');
+        warnings.slice(0, 5).forEach((warning) => {
+          const item = document.createElement('li');
+          item.textContent = warning;
+          list.appendChild(item);
+        });
+        quality.appendChild(list);
+      } else {
+        const ok = document.createElement('div');
+        ok.textContent = '样本覆盖完整，导出的 JSON 可直接上传 AutoDL 训练。';
+        quality.appendChild(ok);
+      }
+      renderGestureFeedback(state.lastEvent);
+    }
+
+    if (panelButton && panel && recorder) {
+      recorder.subscribe(renderGestureDatasetState);
+      renderGestureGuide(labelSelect?.value || 'vertical_swipe');
+      panelButton.addEventListener('click', () => {
+        panel.classList.toggle('is-visible');
+      });
+      labelSelect?.addEventListener('change', () => {
+        renderGestureGuide(labelSelect.value || 'vertical_swipe');
+      });
+      startButton?.addEventListener('click', () => {
+        renderGestureGuide(labelSelect?.value || 'vertical_swipe');
+        recorder.start(labelSelect?.value || 'idle');
+      });
+      stopButton?.addEventListener('click', () => {
+        recorder.stop();
+      });
+      exportButton?.addEventListener('click', () => {
+        recorder.download();
+      });
+      reportButton?.addEventListener('click', () => {
+        recorder.downloadQualityReport?.();
+      });
+      clearButton?.addEventListener('click', () => {
+        const ok = window.confirm('确定清空本地手势训练样本？');
+        if (ok) recorder.clear();
+      });
+    }
+  })();
+  </script>
+  <script>
+  (function () {
+    const toggleBtn = document.getElementById('aiGuideBtn');
+    const panel = document.getElementById('aiGuidePanel');
+    const messagesEl = document.getElementById('aiGuideMessages');
+    const input = document.getElementById('aiGuideInput');
+    const sendBtn = document.getElementById('aiGuideSendBtn');
+    const statusEl = document.getElementById('aiGuideStatus');
+    const narrationBtn = document.getElementById('aiNarrationBtn');
+    const reportBtn = document.getElementById('aiReportBtn');
+    const recommendBtn = document.getElementById('aiRecommendBtn');
+    const graphBtn = document.getElementById('aiGraphBtn');
+    const visualQaBtn = document.getElementById('aiVisualQaBtn');
+    const clipSearchBtn = document.getElementById('aiClipSearchBtn');
+    const creativeFaceBtn = document.getElementById('aiCreativeFaceBtn');
+    const samBtn = document.getElementById('aiSamBtn');
+    const speakBtn = document.getElementById('aiSpeakBtn');
+    const stopSpeakBtn = document.getElementById('aiStopSpeakBtn');
+    const creativePreview = document.getElementById('aiCreativePreview');
+    if (!toggleBtn || !panel || !messagesEl || !input || !sendBtn || !statusEl) return;
+
+    let isBusy = false;
+    let hasLoadedConfig = false;
+    let lastSpeakableText = '';
+    const preferenceStorageKey = 'aiOperaPreferenceEvents:v1';
+
+    function getBackendBaseUrl() {
+      const host = window.location.hostname || '127.0.0.1';
+      const inferred = `${window.location.protocol}//${host}:8000`;
+      return String(window.HQ_MASK_BACKEND_BASE_URL || inferred).replace(/\/+$/, '');
+    }
+
+    function getCurrentFaceKey() {
+      try {
+        if (window.backendMaskClient && typeof window.backendMaskClient.getTextureKey === 'function') {
+          return window.backendMaskClient.getTextureKey() || 'guanyu';
+        }
+        const renderer = window.personalizedRenderer || null;
+        const list = renderer?.faceTextureList || [];
+        const key = list[renderer?.currentTextureIndex || 0] || 'guanyu';
+        return String(key).replace(/\.(png|jpg|jpeg|webp)$/i, '');
+      } catch (error) {
+        return 'guanyu';
+      }
+    }
+
+    function loadPreferenceEvents() {
+      try {
+        const raw = localStorage.getItem(preferenceStorageKey);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed.slice(-120) : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function recordPreferenceEvent(type, faceKey, weight = 1) {
+      try {
+        const events = loadPreferenceEvents();
+        events.push({
+          type,
+          faceKey: window.resolveFaceKnowledgeKey ? window.resolveFaceKnowledgeKey(faceKey || getCurrentFaceKey()) : String(faceKey || getCurrentFaceKey()),
+          weight,
+          at: new Date().toISOString(),
+        });
+        localStorage.setItem(preferenceStorageKey, JSON.stringify(events.slice(-120)));
+      } catch (error) {
+        // Preference memory is optional.
+      }
+    }
+
+    function getUiContext() {
+      const renderer = window.personalizedRenderer || null;
+      return {
+        page: 'swipe_demo_web',
+        currentFaceKey: getCurrentFaceKey(),
+        viewedFaceKeys: getViewedFaceKeys(),
+        preferenceEvents: loadPreferenceEvents(),
+        galleryCount: window.__faceGallery?.size || 0,
+        backendGenerationState: window.backendMaskClient?.isGenerating ? 'running' : 'idle',
+        personalObjState: window.backendMaskClient?.personalObjState || 'unknown',
+        trackingConfidence: renderer?.trackingConfidence || null,
+        meshSource: renderer?.meshSource || '',
+        gestureDataset: window.aiOperaGestureDatasetRecorder?.getState?.() || null,
+      };
+    }
+
+    function getViewedFaceKeys() {
+      const keys = new Set([getCurrentFaceKey()]);
+      try {
+        window.__faceGallery?.forEach?.((item) => {
+          const raw = item?.textureKey || item?.fallbackSnapshot?.textureKey || item?.faceKey || '';
+          if (raw) keys.add(String(raw).replace(/\.(png|jpg|jpeg|webp)$/i, ''));
+        });
+      } catch (error) {
+        // Gallery is optional context only.
+      }
+      return Array.from(keys).filter(Boolean);
+    }
+
+    function getPerformanceContext() {
+      try {
+        const fps = document.getElementById('perfFps')?.textContent || '';
+        const frameMs = document.getElementById('perfFrameMs')?.textContent || '';
+        const backendMs = document.getElementById('perfBackendMs')?.textContent || '';
+        const backendJobs = document.getElementById('perfBackendJobs')?.textContent || '';
+        return { fps, frameMs, backendMs, backendJobs };
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function serializeLandmarks(landmarks) {
+      if (!landmarks || typeof landmarks[Symbol.iterator] !== 'function') return [];
+      return Array.from(landmarks).map((point) => ({
+        x: Number(point?.x || 0),
+        y: Number(point?.y || 0),
+        z: Number(point?.z || 0),
+        visibility: Number(point?.visibility || 0),
+      }));
+    }
+
+    function getFaceLandmarksPayload() {
+      try {
+        return serializeLandmarks(faceMeshResults?.multiFaceLandmarks?.[0]);
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function getHandLandmarksPayload() {
+      try {
+        return (handsResults?.multiHandLandmarks || []).map((hand) => serializeLandmarks(hand));
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function captureCurrentFrameBase64() {
+      try {
+        const videoEl = document.getElementById('video');
+        const sourceCanvas = document.getElementById('canvas');
+        const width = videoEl?.videoWidth || sourceCanvas?.width || 640;
+        const height = videoEl?.videoHeight || sourceCanvas?.height || 480;
+        const scratch = document.createElement('canvas');
+        scratch.width = width;
+        scratch.height = height;
+        const scratchCtx = scratch.getContext('2d');
+        if (!scratchCtx) return null;
+        if (videoEl && videoEl.readyState >= 2) {
+          scratchCtx.drawImage(videoEl, 0, 0, width, height);
+        } else if (sourceCanvas) {
+          scratchCtx.drawImage(sourceCanvas, 0, 0, width, height);
+        } else {
+          return null;
+        }
+        return scratch.toDataURL('image/jpeg', 0.86);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function getTextureFileForFace(face) {
+      const key = face?.key || getCurrentFaceKey();
+      const localFace = window.FaceKnowledgeData?.[key] || null;
+      const image = localFace?.image || face?.image || `faces/${face?.title || key}.png`;
+      return String(image).replace(/^\.?\//, '').replace(/^faces\//i, '');
+    }
+
+    async function switchToRecommendedFace(face) {
+      const renderer = window.personalizedRenderer || null;
+      if (!renderer || typeof renderer.switchTexture !== 'function') return false;
+      const textureFile = getTextureFileForFace(face);
+      const ok = await renderer.switchTexture(textureFile);
+      if (ok) {
+        recordPreferenceEvent('recommendation_accept', face?.key || textureFile, 1);
+        try {
+          window.backendMaskClient?.updateCurrentTextureKey?.(face?.key || textureFile);
+        } catch (error) {
+          // Backend client may not expose a setter; renderer state is enough.
+        }
+      }
+      return !!ok;
+    }
+
+    function getGenerationContext() {
+      const client = window.backendMaskClient || null;
+      return {
+        isGenerating: !!client?.isGenerating,
+        personalObjState: client?.personalObjState || '',
+        reconstructionProfile: client?.reconstructionProfile || '',
+        lastCaptureFrames: client?.lastCaptureFrames?.length || 0,
+        galleryCount: window.__faceGallery?.size || 0,
+      };
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function sanitizeXiaopuText(text) {
+      return String(text || '').replace(/[#*]/g, '').trim();
+    }
+
+    function addMessage(role, text, meta) {
+      const item = document.createElement('div');
+      item.className = `ai-guide-message ${role}`;
+      const displayText = role === 'user' ? String(text || '') : sanitizeXiaopuText(text);
+      item.textContent = displayText;
+      if (meta) {
+        const metaEl = document.createElement('span');
+        metaEl.className = 'ai-guide-meta';
+        metaEl.textContent = meta;
+        item.appendChild(metaEl);
+      }
+      messagesEl.appendChild(item);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (role === 'agent' || role === 'report') {
+        lastSpeakableText = displayText;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function canSpeak() {
+      return typeof window.speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined';
+    }
+
+    function speakText(text) {
+      const content = String(text || '').replace(/[#*_`>-]/g, '').trim();
+      if (!content) return;
+      if (!canSpeak()) {
+        addMessage('agent', '当前浏览器不支持语音合成，但讲解词已生成，可直接阅读文字。', 'tts-unavailable');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(content);
+      utterance.lang = 'zh-CN';
+      utterance.rate = 0.92;
+      utterance.pitch = 1.02;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    async function loadAiConfig() {
+      if (hasLoadedConfig) return;
+      hasLoadedConfig = true;
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/config`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const config = await response.json();
+        setStatus(config.deepseekConfigured ? `DeepSeek · ${config.model}` : '本地 RAG fallback');
+      } catch (error) {
+        setStatus('后端未连接');
+      }
+    }
+
+    async function askAgent(prompt) {
+      const message = String(prompt || '').trim();
+      if (!message || isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      input.value = '';
+      addMessage('user', message);
+      setStatus('小谱思考中');
+
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/agent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            currentFaceKey: getCurrentFaceKey(),
+            uiContext: getUiContext(),
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const mode = data.usedDeepSeek ? `DeepSeek · ${data.model || 'model'}` : data.agentMode || 'local-rag';
+        setStatus(mode);
+        addMessage('agent', data.answer || '小谱暂未返回内容。', mode);
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', '小谱后端暂不可用。请确认后端服务已经启动，再回到这里提问。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function requestRecommendation() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('智能推荐中');
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/recommend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentFaceKey: getCurrentFaceKey(),
+            viewedFaceKeys: getViewedFaceKeys(),
+            preferenceEvents: loadPreferenceEvents(),
+            uiContext: getUiContext(),
+            limit: 5,
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const face = data.face || {};
+        const switched = await switchToRecommendedFace(face);
+        setStatus(`推荐 · ${data.policy || 'bandit'}`);
+        addMessage(
+          'agent',
+          `${data.reason || '已生成下一张脸谱推荐。'}${switched ? `\n已切换到：${face.title || face.key || '推荐脸谱'}。` : '\n推荐已生成，当前渲染器暂未切换。'}`,
+          `score ${data.score ?? '--'}`
+        );
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', '智能推荐暂不可用。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function requestGraphContext() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('GraphRAG 检索中');
+      try {
+        const faceKey = getCurrentFaceKey();
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/graph?q=${encodeURIComponent(faceKey + ' 脸谱 颜色 寓意 剧目')}&currentFaceKey=${encodeURIComponent(faceKey)}&limit=8`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const labelById = new Map((data.nodes || []).map((node) => [node.id, node.label]));
+        const relations = (data.edges || [])
+          .slice(0, 6)
+          .map((edge) => `${labelById.get(edge.source) || edge.source} --${edge.label || edge.type}--> ${labelById.get(edge.target) || edge.target}`)
+          .join('\n');
+        setStatus('GraphRAG 子图');
+        addMessage(
+          'agent',
+          `${data.summary || '已生成脸谱关系子图。'}${relations ? `\n${relations}` : ''}`,
+          `nodes ${(data.nodes || []).length} · edges ${(data.edges || []).length}`
+        );
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', '脸谱关系图暂不可用。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function requestVisualQa() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('视觉质检中');
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/visual-qa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: captureCurrentFrameBase64(),
+            currentFaceKey: getCurrentFaceKey(),
+            uiContext: getUiContext(),
+            faceLandmarks: getFaceLandmarksPayload(),
+            handLandmarks: getHandLandmarksPayload(),
+            prompt: input.value || '请检查当前面罩贴合、遮挡、清晰度和展示风险。',
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const checks = (data.checks || []).map((item) => `${item.name}: ${item.message}`).join('\n');
+        setStatus(data.usedExternalVlm ? 'VLM 视觉质检' : '本地视觉质检');
+        addMessage('agent', `${data.summary || '视觉质检完成。'}${checks ? `\n${checks}` : ''}`, data.provider || 'visual-qa');
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', '视觉质检暂不可用。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function requestClipSearch() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('CLIP 检索中');
+      const query = input.value.trim() || '从当前画面和体验上下文检索相近脸谱';
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/clip/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            imageBase64: captureCurrentFrameBase64(),
+            currentFaceKey: getCurrentFaceKey(),
+            limit: 5,
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const lines = (data.results || []).map((item, index) => {
+          const face = item.face || {};
+          return `${index + 1}. ${face.title || face.key} · ${item.reason} · score ${item.score}`;
+        }).join('\n');
+        setStatus(data.usedExternalClip ? 'CLIP 多模态检索' : 'CLIP-lite 检索');
+        addMessage('agent', `检索词：${query}\n${lines || '暂未检索到脸谱。'}`, data.provider || 'clip-search');
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', 'CLIP 多模态检索暂不可用。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    function renderCreativePreview(data) {
+      if (!creativePreview || !data?.editableSvg) return;
+      const design = data.design || {};
+      const svgBlob = new Blob([data.editableSvg], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const palette = (design.palette || [])
+        .map((color) => /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#ffffff')
+        .map((color) => `<span class="ai-palette-swatch" style="background:${color}"></span>`)
+        .join('');
+      creativePreview.innerHTML = `
+        <img src="${url}" alt="AI 创作脸谱预览">
+        <div>
+          <h3>${escapeHtml(design.title || 'AI 创作脸谱')}</h3>
+          <div class="ai-palette-row">${palette}</div>
+          <p>${escapeHtml((design.meaning || []).join('；'))}</p>
+          <p>${escapeHtml((design.process || []).join('；'))}</p>
+        </div>
+      `;
+      creativePreview.classList.add('is-visible');
+    }
+
+    async function requestCreativeFace() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('AI 创作中');
+      const prompt = input.value.trim() || '结合当前脸谱，创作一个适合沉浸式数字展厅展示的新脸谱设计';
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/creative-face`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            currentFaceKey: getCurrentFaceKey(),
+            style: 'stage-facepaint',
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const design = data.design || {};
+        renderCreativePreview(data);
+        setStatus(data.usedDeepSeek ? 'DeepSeek 创作脸谱' : '本地创作脸谱');
+        addMessage(
+          'agent',
+          `${design.title || 'AI 创作脸谱'}\n${(design.meaning || []).join('\n')}\n\n${data.note || ''}`,
+          data.provider || 'creative-face'
+        );
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', 'AI 创作脸谱暂不可用。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function requestSamSegment() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('SAM 遮挡分析中');
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/sam/segment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: captureCurrentFrameBase64(),
+            currentFaceKey: getCurrentFaceKey(),
+            uiContext: getUiContext(),
+            faceLandmarks: getFaceLandmarksPayload(),
+            handLandmarks: getHandLandmarksPayload(),
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        setStatus(data.usedExternalSam ? 'SAM 像素分割' : 'SAM fallback 遮挡');
+        addMessage(
+          'agent',
+          `遮挡分割完成：检测到 ${(data.segments || []).length} 个遮挡区域，手脸重叠约 ${Math.round((data.occlusionRatio || 0) * 100)}%。\n${data.note || ''}`,
+          data.provider || 'sam-occlusion'
+        );
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', 'SAM 遮挡分析暂不可用。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function openDigitalExhibition() {
+      addMessage('agent', '脸谱收藏馆已打开。这里会展示已使用过的脸谱、对应唱段和原视频入口。', 'face-gallery');
+      window.open('/digital_exhibition_viewer.html?scene=demo-stage', '_blank', 'noopener');
+    }
+
+    async function requestNarration() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('生成讲解词中');
+      addMessage('user', '请生成一段适合现场播报的 AI 展馆讲解词。');
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/narration`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentFaceKey: getCurrentFaceKey(),
+            uiContext: getUiContext(),
+            durationSeconds: 35,
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const mode = data.usedDeepSeek ? `DeepSeek · ${data.model || 'model'}` : data.provider || 'local-rag';
+        setStatus(`讲解词 · ${mode}`);
+        addMessage('agent', data.script || '讲解词暂未生成。', `narration · ${mode}`);
+        speakText(data.script || '');
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', '讲解词生成失败。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function requestReport() {
+      if (isBusy) return;
+      isBusy = true;
+      sendBtn.disabled = true;
+      setStatus('生成观展报告中');
+      addMessage('user', '请根据本次体验生成观展报告。');
+      try {
+        const response = await fetch(`${getBackendBaseUrl()}/api/ai/report`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentFaceKey: getCurrentFaceKey(),
+            viewedFaceKeys: getViewedFaceKeys(),
+            uiContext: getUiContext(),
+            performance: getPerformanceContext(),
+            gestureDataset: window.aiOperaGestureDatasetRecorder?.getState?.() || {},
+            generation: getGenerationContext(),
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const mode = data.usedDeepSeek ? `DeepSeek · ${data.model || 'model'}` : data.provider || 'local-rag';
+        setStatus(`观展报告 · ${mode}`);
+        addMessage('report', data.report || '观展报告暂未生成。', `report · ${mode}`);
+      } catch (error) {
+        setStatus('后端未连接');
+        addMessage('agent', '观展报告生成失败。请确认后端已启动。', 'offline');
+      } finally {
+        isBusy = false;
+        sendBtn.disabled = false;
+      }
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      panel.classList.toggle('is-visible');
+      if (panel.classList.contains('is-visible')) {
+        loadAiConfig();
+        if (!messagesEl.children.length) {
+          addMessage('agent', '我是小谱，你可以问我任何跟川剧相关的问题！', '在线');
+        }
+        input.focus();
+      }
+    });
+
+    sendBtn.addEventListener('click', () => askAgent(input.value));
+    recommendBtn?.addEventListener('click', () => requestRecommendation());
+    graphBtn?.addEventListener('click', () => requestGraphContext());
+    visualQaBtn?.addEventListener('click', () => requestVisualQa());
+    clipSearchBtn?.addEventListener('click', () => requestClipSearch());
+    creativeFaceBtn?.addEventListener('click', () => requestCreativeFace());
+    samBtn?.addEventListener('click', () => requestSamSegment());
+    narrationBtn?.addEventListener('click', () => requestNarration());
+    reportBtn?.addEventListener('click', () => requestReport());
+    speakBtn?.addEventListener('click', () => speakText(lastSpeakableText));
+    stopSpeakBtn?.addEventListener('click', () => {
+      if (canSpeak()) window.speechSynthesis.cancel();
+    });
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        askAgent(input.value);
+      }
+    });
+    panel.querySelectorAll('[data-ai-prompt]').forEach((button) => {
+      button.addEventListener('click', () => askAgent(button.dataset.aiPrompt || ''));
+    });
+  })();
+  </script>
+  <script src="/legacy/xiaopu_floating_agent.js?v=20260529-typing-stream"></script>
+</body>
+</html>

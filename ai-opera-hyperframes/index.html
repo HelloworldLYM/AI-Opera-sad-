@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Opera HyperFrames Motion Poster</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #04070d;
+      }
+
+      #ai-opera-root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #04070d;
+      }
+
+      #ai-opera {
+        position: absolute;
+        inset: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="ai-opera-root"
+      data-composition-id="ai-opera-root"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div
+        id="ai-opera"
+        data-composition-id="ai-opera"
+        data-composition-src="compositions/ai-opera.html"
+        data-start="0"
+        data-duration="36"
+        data-track-index="0"
+      ></div>
+    </div>
+    <script src="vendor/gsap.min.js"></script>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["ai-opera-root"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

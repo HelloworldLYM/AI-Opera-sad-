@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/legacy/shanzi2.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>川剧变脸体验馆</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html {
+        font-size: 17px;
+      }
+
+      body {
+        text-rendering: optimizeLegibility;
+      }
+
+      a,
+      button {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      a:focus-visible,
+      button:focus-visible {
+        outline: 2px solid rgba(127, 229, 255, 0.84);
+        outline-offset: 4px;
+      }
+
+      .primary-button,
+      .secondary-button {
+        min-height: 46px;
+      }
+
+      .mode-card,
+      .portal-window {
+        min-height: 44px;
+      }
+
+      .primary-button:active,
+      .secondary-button:active,
+      .mode-card:active,
+      .portal-window:active {
+        transform: translateY(0) scale(0.985);
+      }
+
+      .hero-summary,
+      .feature-card p,
+      .journey-copy p,
+      .journey-item p,
+      .portal-copy p,
+      .portal-hint {
+        text-wrap: pretty;
+      }
+
+      #mouseTraceCanvas {
+        position: fixed;
+        inset: 0;
+        z-index: 6;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0.34;
+        mix-blend-mode: screen;
+        contain: strict;
+      }
+
+      @media (max-width: 760px) {
+        html {
+          font-size: 16.5px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #mouseTraceCanvas {
+          opacity: 0.16;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="mouseTraceCanvas" aria-hidden="true"></canvas>
+    <div id="root"></div>
+    <script>
+      (() => {
+        const canvas = document.getElementById('mouseTraceCanvas');
+        const ctx = canvas.getContext('2d');
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const pointer = {
+          x: window.innerWidth * 0.5,
+          y: window.innerHeight * 0.5,
+          active: false,
+        };
+        const traces = [];
+        let animationFrame = 0;
+        let width = 0;
+        let height = 0;
+        let tick = 0;
+
+        function resizeCanvas() {
+          const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.floor(width * dpr);
+          canvas.height = Math.floor(height * dpr);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function pushTrace(x, y, forced) {
+          if (!forced && traces.length > 46) traces.shift();
+          traces.push({
+            x,
+            y,
+            vx: (Math.random() - 0.5) * 1.1,
+            vy: (Math.random() - 0.5) * 1.1,
+            life: 1,
+            hue: Math.random() > 0.58 ? 34 : Math.random() > 0.48 ? 194 : 355,
+          });
+        }
+
+        function draw() {
+          tick += 0.006;
+          ctx.clearRect(0, 0, width, height);
+
+          if (!reducedMotion) {
+            const autoX = width * (0.5 + Math.sin(tick * 1.6) * 0.24);
+            const autoY = height * (0.5 + Math.cos(tick * 1.05) * 0.18);
+            if (Math.random() > 0.7) {
+              pushTrace(pointer.active ? pointer.x : autoX, pointer.active ? pointer.y : autoY, false);
+            }
+          }
+
+          for (let i = traces.length - 1; i >= 0; i -= 1) {
+            const t = traces[i];
+            t.x += t.vx;
+            t.y += t.vy;
+            t.life -= reducedMotion ? 0.04 : 0.016;
+            if (t.life <= 0) {
+              traces.splice(i, 1);
+              continue;
+            }
+
+            for (let j = i - 1; j >= Math.max(0, i - 6); j -= 1) {
+              const other = traces[j];
+              const dx = t.x - other.x;
+              const dy = t.y - other.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < 150) {
+                ctx.beginPath();
+                ctx.strokeStyle = `hsla(${t.hue}, 100%, 68%, ${0.12 * t.life * (1 - dist / 150)})`;
+                ctx.lineWidth = 1;
+                ctx.moveTo(t.x, t.y);
+                ctx.lineTo(other.x, other.y);
+                ctx.stroke();
+              }
+            }
+
+            ctx.beginPath();
+            ctx.fillStyle = `hsla(${t.hue}, 100%, 70%, ${0.38 * t.life})`;
+            ctx.arc(t.x, t.y, 1.2 + t.life * 1.7, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          animationFrame = requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', resizeCanvas, { passive: true });
+        window.addEventListener('pointermove', (event) => {
+          pointer.x = event.clientX;
+          pointer.y = event.clientY;
+          pointer.active = true;
+          if (!reducedMotion) pushTrace(pointer.x, pointer.y, false);
+        }, { passive: true });
+        window.addEventListener('pointerleave', () => {
+          pointer.active = false;
+        }, { passive: true });
+        window.addEventListener('pagehide', () => {
+          cancelAnimationFrame(animationFrame);
+        }, { passive: true });
+
+        resizeCanvas();
+        for (let i = 0; i < 22; i += 1) {
+          pushTrace(Math.random() * window.innerWidth, Math.random() * window.innerHeight, true);
+        }
+        draw();
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

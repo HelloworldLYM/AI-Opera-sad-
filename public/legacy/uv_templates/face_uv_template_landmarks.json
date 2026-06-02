@@ -1,0 +1,11 @@
+{
+  "left_eye": [390, 380],
+  "right_eye": [634, 380],
+  "nose_tip": [512, 520],
+  "mouth_left": [440, 680],
+  "mouth_right": [584, 680],
+  "chin": [512, 860],
+  "forehead": [512, 180],
+  "left_cheek": [300, 560],
+  "right_cheek": [724, 560]
+}

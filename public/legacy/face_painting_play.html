@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>绘制脸谱</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 17px; }
+    body {
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: #fff3c2;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      text-rendering: optimizeLegibility;
+      background:
+        linear-gradient(180deg, rgba(8, 1, 1, 0.58), rgba(10, 2, 2, 0.94)),
+        url("gallary_bg.png") center center / cover fixed no-repeat,
+        #110202;
+    }
+    a,
+    button {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid rgba(255, 224, 135, 0.86);
+      outline-offset: 4px;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 18% 16%, rgba(255, 213, 84, 0.18), transparent 24%),
+        radial-gradient(circle at 78% 12%, rgba(137, 20, 20, 0.28), transparent 28%),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.42), transparent 50%, rgba(0, 0, 0, 0.46));
+      z-index: -1;
+    }
+    .page {
+      width: min(1220px, calc(100% - 36px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 24px 0 46px;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .nav-btn,
+    .primary-btn {
+      min-height: 44px;
+      border: 1px solid rgba(212, 175, 55, 0.68);
+      border-radius: 8px;
+      padding: 10px 17px;
+      cursor: pointer;
+      font-family: "STKaiti", "KaiTi", serif;
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+    .nav-btn:active,
+    .primary-btn:active {
+      transform: scale(0.985);
+    }
+    .nav-btn {
+      color: #ffe38c;
+      background: rgba(70, 16, 8, 0.82);
+    }
+    .primary-btn {
+      color: #351200;
+      background: linear-gradient(135deg, #ffe38c, #d4af37 62%, #9c5b12);
+      font-weight: 900;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+    }
+    .primary-btn:disabled {
+      cursor: default;
+      opacity: 0.58;
+      filter: grayscale(0.2);
+    }
+    .mini-title {
+      color: rgba(255, 243, 194, 0.78);
+      font-family: "STKaiti", "KaiTi", serif;
+      letter-spacing: 6px;
+      font-size: 15px;
+      text-align: right;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) minmax(330px, 430px);
+      gap: 24px;
+      flex: 1;
+      min-height: 640px;
+    }
+    .stage-wrap,
+    .side-panel {
+      border: 1px solid rgba(212, 175, 55, 0.34);
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(15, 4, 4, 0.82), rgba(35, 8, 6, 0.68));
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
+    }
+    .stage-wrap {
+      position: relative;
+      min-height: 640px;
+      overflow: hidden;
+    }
+    #paintStage {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+    }
+    .stage-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      width: min(620px, calc(100% - 42px));
+      padding: 10px 18px;
+      color: rgba(255, 243, 194, 0.88);
+      text-align: center;
+      font-family: "STKaiti", "KaiTi", serif;
+      font-size: 17px;
+      letter-spacing: 4px;
+      background: linear-gradient(90deg, transparent, rgba(5, 2, 1, 0.74), transparent);
+      border-top: 1px solid rgba(255, 230, 163, 0.2);
+      border-bottom: 1px solid rgba(255, 230, 163, 0.18);
+      pointer-events: none;
+    }
+    .status {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 36px;
+      background: rgba(4, 1, 1, 0.72);
+      text-align: center;
+      z-index: 2;
+    }
+    .status.is-visible { display: grid; }
+    .status h2 {
+      color: #ffd970;
+      font-family: "STKaiti", "KaiTi", serif;
+      font-size: 32px;
+      letter-spacing: 5px;
+      margin-bottom: 16px;
+    }
+    .status p {
+      color: rgba(255, 246, 219, 0.88);
+      line-height: 1.8;
+      font-size: 16px;
+      max-width: 560px;
+      text-wrap: pretty;
+    }
+    .side-panel {
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      min-height: 640px;
+    }
+    .face-name {
+      font-family: "STXingkai", "华文行楷", "STKaiti", "KaiTi", serif;
+      font-size: clamp(48px, 6vw, 76px);
+      line-height: 1;
+      letter-spacing: 10px;
+      color: #f8d45e;
+      text-shadow: 0 4px 14px rgba(0, 0, 0, 0.75), 0 0 24px rgba(255, 199, 76, 0.24);
+    }
+    .tagline {
+      margin-top: 14px;
+      color: #ffe38c;
+      font-family: "STXingkai", "华文行楷", "STKaiti", "KaiTi", serif;
+      font-size: 28px;
+      line-height: 1.3;
+      letter-spacing: 4px;
+      text-shadow: 0 3px 10px rgba(0, 0, 0, 0.75), 0 0 16px rgba(255, 206, 86, 0.3);
+    }
+    .kit {
+      margin-top: 20px;
+      padding: 12px 14px;
+      border-left: 3px solid rgba(255, 217, 112, 0.82);
+      background: rgba(110, 22, 12, 0.24);
+      color: rgba(255, 239, 187, 0.96);
+      font-family: "STKaiti", "KaiTi", serif;
+      font-size: 17px;
+      line-height: 1.72;
+    }
+    .progress {
+      margin-top: 22px;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 224, 135, 0.28);
+      background: rgba(0, 0, 0, 0.34);
+    }
+    #progressFill {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #8b1118, #ffd970);
+      transition: width 0.25s ease;
+    }
+    .steps {
+      list-style: none;
+      margin-top: 22px;
+      display: grid;
+      gap: 12px;
+    }
+    .steps li {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid rgba(255, 224, 135, 0.14);
+      border-radius: 8px;
+      color: rgba(255, 246, 219, 0.72);
+      background: rgba(0, 0, 0, 0.16);
+    }
+    .steps li.is-active {
+      color: #fff6db;
+      border-color: rgba(255, 224, 135, 0.44);
+      background: rgba(120, 25, 12, 0.25);
+    }
+    .steps li.is-done {
+      color: rgba(255, 246, 219, 0.92);
+      border-color: rgba(212, 175, 55, 0.28);
+    }
+    .steps span {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 224, 135, 0.44);
+      color: #ffe08a;
+      background: rgba(80, 16, 8, 0.62);
+      font-weight: 800;
+    }
+    .steps p {
+      margin-top: 2px;
+      line-height: 1.65;
+      font-size: 15px;
+      text-wrap: pretty;
+    }
+    .controls {
+      margin-top: auto;
+      padding-top: 22px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .texture-preview {
+      width: 82px;
+      height: 82px;
+      border: 1px solid rgba(255, 224, 135, 0.35);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.32);
+      object-fit: contain;
+    }
+
+    @media (max-width: 900px) {
+      html { font-size: 16.5px; }
+      .page { width: min(100% - 24px, 720px); padding-top: 18px; }
+      .topbar { align-items: flex-start; }
+      .layout { grid-template-columns: 1fr; min-height: 0; }
+      .stage-wrap { min-height: 520px; }
+      .side-panel { min-height: auto; padding: 20px; }
+      .mini-title { display: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="/legacy/taste_refinement.css" />
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div class="nav-actions">
+        <button class="nav-btn" id="backBtn">← 返回详情页</button>
+        <button class="nav-btn" id="stageBtn">返回舞台</button>
+      </div>
+      <div class="mini-title">个人脸谱陈列馆 · 绘制脸谱</div>
+    </div>
+
+    <section class="layout">
+      <div class="stage-wrap">
+        <div id="paintStage"></div>
+        <div class="status" id="status">
+          <div>
+            <h2>个人 OBJ 未就绪</h2>
+            <p>请先回到舞台完成一次 3DDFA-V3 生成，再进入这里绘制。</p>
+          </div>
+        </div>
+        <div class="stage-hint" id="stageHint">点击脸谱或右侧按钮，按步骤绘制</div>
+      </div>
+
+      <aside class="side-panel">
+        <h1 class="face-name" id="faceName">脸谱</h1>
+        <div class="tagline" id="tagline">一笔入戏</div>
+        <p class="kit" id="paintKit"></p>
+        <div class="progress"><div id="progressFill"></div></div>
+        <ol class="steps" id="steps"></ol>
+        <div class="controls">
+          <button class="primary-btn" id="nextBtn">下一步绘制</button>
+          <button class="nav-btn" id="resetBtn">重画线稿</button>
+          <img class="texture-preview" id="texturePreview" alt="当前绘制贴图预览" />
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="face_knowledge_data.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const faceKey = window.resolveFaceKnowledgeKey(params.get('face') || params.get('title'));
+    const face = window.FaceKnowledgeData[faceKey] || window.FaceKnowledgeData.guanyu;
+
+    window.__xiaopuGetContext = () => ({
+      currentFaceKey: faceKey || 'guanyu',
+      faceTitle: face?.title || '',
+      faceMeta: face?.role || '脸谱绘制',
+      extra: {
+        section: 'face_painting_play',
+      },
+    });
+    const stage = document.getElementById('paintStage');
+    const statusBox = document.getElementById('status');
+    const stepsList = document.getElementById('steps');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const backBtn = document.getElementById('backBtn');
+    const stageBtn = document.getElementById('stageBtn');
+    const progressFill = document.getElementById('progressFill');
+    const texturePreview = document.getElementById('texturePreview');
+    const textureSize = 1024;
+    const OBJ_CACHE_NAME = 'ai-opera-obj-cache-v1';
+    const textureCanvas = document.createElement('canvas');
+    const textureCtx = textureCanvas.getContext('2d', { willReadFrequently: true });
+    textureCanvas.width = textureSize;
+    textureCanvas.height = textureSize;
+
+    let sourceImage = null;
+    let sourceCanvas = null;
+    let sourceData = null;
+    let lineCanvas = null;
+    let guideCanvas = null;
+    let texture = null;
+    let currentStep = 0;
+    let scene = null;
+    let camera = null;
+    let renderer = null;
+    let maskMesh = null;
+    let maskBackMesh = null;
+    let maskGroup = null;
+    let mouseDown = false;
+    let lastMouseX = 0;
+    let rotateY = 0;
+    const facepaintTextureFit = {
+      scaleX: 1.16,
+      scaleY: 1.06,
+      offsetX: 0,
+      offsetY: -0.095,
+    };
+
+    document.title = `${face.title} · 绘制脸谱`;
+    document.getElementById('faceName').textContent = face.title;
+    document.getElementById('tagline').textContent = face.tagline || `${face.title}——一眼入戏`;
+    document.getElementById('paintKit').textContent = face.paintKit || '';
+
+    const processSteps = face.processSteps || face.process || [];
+    processSteps.forEach((label, index) => {
+      const item = document.createElement('li');
+      item.innerHTML = `<span>${index + 1}</span><p>${label}</p>`;
+      stepsList.appendChild(item);
+    });
+
+    backBtn.addEventListener('click', () => {
+      window.location.href = `face_knowledge.html?face=${encodeURIComponent(faceKey)}`;
+    });
+    stageBtn.addEventListener('click', () => {
+      window.location.href = '../stage.html?mode=lite';
+    });
+    nextBtn.addEventListener('click', nextStep);
+    resetBtn.addEventListener('click', () => {
+      currentStep = 0;
+      drawTexture();
+      updateStepUi();
+    });
+    stage.addEventListener('click', (event) => {
+      if (event.detail && Math.abs(event.clientX - lastMouseX) < 6) nextStep();
+    });
+    stage.addEventListener('pointerdown', (event) => {
+      mouseDown = true;
+      lastMouseX = event.clientX;
+    });
+    window.addEventListener('pointerup', () => { mouseDown = false; });
+    window.addEventListener('pointermove', (event) => {
+      if (!mouseDown || !maskGroup) return;
+      const dx = event.clientX - lastMouseX;
+      lastMouseX = event.clientX;
+      rotateY += dx * 0.008;
+      maskGroup.rotation.y = rotateY;
+    });
+    window.addEventListener('resize', resizeRenderer);
+
+    function showStatus(title, message) {
+      statusBox.classList.add('is-visible');
+      statusBox.innerHTML = `<div><h2>${title}</h2><p>${message}</p></div>`;
+    }
+
+    function hideStatus() {
+      statusBox.classList.remove('is-visible');
+    }
+
+    function getPersonalObjUrl() {
+      try {
+        const cache = JSON.parse(window.localStorage?.getItem('hqMaskPersonalObjCache:v1') || 'null');
+        if (cache?.objUrl) return cache.objUrl;
+        if (cache?.sessionId) return `/generated_masks/${cache.sessionId}/personal_face.obj`;
+      } catch (error) {
+        // Continue with session fallback.
+      }
+      const sessionId = window.localStorage?.getItem('hqMaskSessionId') || window.sessionStorage?.getItem('hqMaskSessionId');
+      return sessionId ? `/generated_masks/${sessionId}/personal_face.obj` : '';
+    }
+
+    function resolveObjAssetUrl(value) {
+      try {
+        return new URL(value, window.location.href).href;
+      } catch (error) {
+        return value;
+      }
+    }
+
+    function looksLikeObjText(text) {
+      const content = String(text || '');
+      return /^\s*v\s+/m.test(content) && /^\s*f\s+/m.test(content);
+    }
+
+    async function readCachedObjText(url) {
+      if (!window.caches || !url) return null;
+      try {
+        const resolvedUrl = resolveObjAssetUrl(url);
+        const cache = await window.caches.open(OBJ_CACHE_NAME);
+        const cached = await cache.match(resolvedUrl);
+        if (!cached?.ok) return null;
+        const text = await cached.text();
+        return looksLikeObjText(text) ? text : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function fetchObjCandidate(url) {
+      const cachedText = await readCachedObjText(url);
+      if (cachedText) return cachedText;
+
+      const resolvedUrl = resolveObjAssetUrl(url);
+      const response = await fetch(resolvedUrl, { cache: 'force-cache' });
+      if (!response.ok) {
+        throw new Error(`personal-obj-fetch-${response.status}`);
+      }
+      const responseForCache = response.clone();
+      const text = await response.text();
+      if (looksLikeObjText(text) && window.caches) {
+        try {
+          const cache = await window.caches.open(OBJ_CACHE_NAME);
+          await cache.put(resolvedUrl, responseForCache);
+        } catch (error) {
+          // Cache Storage is only an acceleration path.
+        }
+      }
+      return text;
+    }
+
+    async function fetchTextWithFallback(url) {
+      const candidates = [url];
+      if (url.startsWith('/generated_masks/')) {
+        candidates.push(`/public${url}`);
+      }
+      for (const candidate of candidates) {
+        try {
+          const text = await fetchObjCandidate(candidate);
+          if (looksLikeObjText(text)) return text;
+        } catch (error) {
+          // Try next candidate.
+        }
+      }
+      throw new Error('personal-obj-not-found');
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = src;
+      });
+    }
+
+    function drawImageContain(ctx, image) {
+      const scale = Math.min(textureSize / image.width, textureSize / image.height);
+      const width = image.width * scale * facepaintTextureFit.scaleX;
+      const height = image.height * scale * facepaintTextureFit.scaleY;
+      const x = (textureSize - width) / 2 + textureSize * facepaintTextureFit.offsetX;
+      const y = (textureSize - height) / 2 + textureSize * facepaintTextureFit.offsetY;
+      ctx.drawImage(image, x, y, width, height);
+    }
+
+    function prepareSourceCanvases() {
+      sourceCanvas = document.createElement('canvas');
+      sourceCanvas.width = textureSize;
+      sourceCanvas.height = textureSize;
+      const srcCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+      srcCtx.clearRect(0, 0, textureSize, textureSize);
+      drawImageContain(srcCtx, sourceImage);
+      sourceData = srcCtx.getImageData(0, 0, textureSize, textureSize);
+
+      lineCanvas = document.createElement('canvas');
+      lineCanvas.width = textureSize;
+      lineCanvas.height = textureSize;
+      const lineCtx = lineCanvas.getContext('2d');
+      const lineImage = lineCtx.createImageData(textureSize, textureSize);
+      const src = sourceData.data;
+      const out = lineImage.data;
+      for (let y = 1; y < textureSize - 1; y += 1) {
+        for (let x = 1; x < textureSize - 1; x += 1) {
+          const i = (y * textureSize + x) * 4;
+          const right = (y * textureSize + x + 1) * 4;
+          const down = ((y + 1) * textureSize + x) * 4;
+          const g = (src[i] + src[i + 1] + src[i + 2]) / 3;
+          const gr = (src[right] + src[right + 1] + src[right + 2]) / 3;
+          const gd = (src[down] + src[down + 1] + src[down + 2]) / 3;
+          const edge = Math.abs(g - gr) + Math.abs(g - gd) + Math.abs(src[i + 3] - src[right + 3]) * 0.8 + Math.abs(src[i + 3] - src[down + 3]) * 0.8;
+          if (src[i + 3] > 14 && edge > 42) {
+            out[i] = 30;
+            out[i + 1] = 17;
+            out[i + 2] = 10;
+            out[i + 3] = Math.min(235, edge * 2.4);
+          }
+        }
+      }
+      lineCtx.putImageData(lineImage, 0, 0);
+      lineCtx.globalAlpha = 0.55;
+      lineCtx.drawImage(lineCanvas, -1, 0);
+      lineCtx.drawImage(lineCanvas, 1, 0);
+      lineCtx.drawImage(lineCanvas, 0, -1);
+      lineCtx.drawImage(lineCanvas, 0, 1);
+      lineCtx.globalAlpha = 1;
+
+      guideCanvas = document.createElement('canvas');
+      guideCanvas.width = textureSize;
+      guideCanvas.height = textureSize;
+      const guideCtx = guideCanvas.getContext('2d');
+      guideCtx.strokeStyle = 'rgba(124, 64, 22, 0.38)';
+      guideCtx.lineWidth = 5;
+      guideCtx.setLineDash([18, 16]);
+      guideCtx.beginPath();
+      guideCtx.moveTo(textureSize * 0.5, textureSize * 0.1);
+      guideCtx.lineTo(textureSize * 0.5, textureSize * 0.9);
+      guideCtx.ellipse(textureSize * 0.5, textureSize * 0.5, textureSize * 0.28, textureSize * 0.38, 0, 0, Math.PI * 2);
+      guideCtx.stroke();
+      guideCtx.setLineDash([]);
+    }
+
+    function paintIvoryBase() {
+      const src = sourceData.data;
+      const base = textureCtx.createImageData(textureSize, textureSize);
+      const out = base.data;
+      for (let i = 0; i < src.length; i += 4) {
+        const alpha = src[i + 3];
+        if (alpha > 10) {
+          out[i] = 238;
+          out[i + 1] = 224;
+          out[i + 2] = 196;
+          out[i + 3] = Math.min(255, alpha + 18);
+        }
+      }
+      textureCtx.putImageData(base, 0, 0);
+    }
+
+    function drawSourceMasked(maskDrawer, alpha = 1, blur = 0) {
+      textureCtx.save();
+      textureCtx.beginPath();
+      maskDrawer(textureCtx);
+      textureCtx.clip();
+      textureCtx.globalAlpha = alpha;
+      textureCtx.filter = blur ? `blur(${blur}px) saturate(0.95)` : 'none';
+      textureCtx.drawImage(sourceCanvas, 0, 0);
+      textureCtx.restore();
+      textureCtx.filter = 'none';
+      textureCtx.globalAlpha = 1;
+    }
+
+    function drawTexture() {
+      textureCtx.clearRect(0, 0, textureSize, textureSize);
+      paintIvoryBase();
+
+      if (currentStep >= 1) {
+        textureCtx.drawImage(guideCanvas, 0, 0);
+      }
+      if (currentStep >= 2) {
+        drawSourceMasked((ctx) => {
+          ctx.ellipse(textureSize * 0.5, textureSize * 0.52, textureSize * 0.33, textureSize * 0.43, 0, 0, Math.PI * 2);
+        }, 0.62, 2.2);
+      }
+      if (currentStep >= 3) {
+        drawSourceMasked((ctx) => {
+          ctx.rect(textureSize * 0.19, textureSize * 0.13, textureSize * 0.62, textureSize * 0.52);
+          ctx.rect(textureSize * 0.30, textureSize * 0.48, textureSize * 0.40, textureSize * 0.25);
+        }, 0.82, 0.5);
+      }
+      if (currentStep >= 4) {
+        textureCtx.drawImage(sourceCanvas, 0, 0);
+      }
+
+      textureCtx.drawImage(lineCanvas, 0, 0);
+      if (texture) texture.needsUpdate = true;
+      texturePreview.src = textureCanvas.toDataURL('image/png');
+    }
+
+    function updateStepUi() {
+      const items = stepsList.querySelectorAll('li');
+      items.forEach((item, index) => {
+        item.classList.toggle('is-done', index < currentStep);
+        item.classList.toggle('is-active', index === currentStep);
+        const mark = item.querySelector('span');
+        if (mark) mark.textContent = index < currentStep ? '✓' : String(index + 1);
+      });
+      progressFill.style.width = `${Math.round((currentStep / Math.max(1, processSteps.length)) * 100)}%`;
+      nextBtn.textContent = currentStep >= processSteps.length ? '绘制完成' : '下一步绘制';
+      nextBtn.disabled = currentStep >= processSteps.length;
+    }
+
+    function nextStep() {
+      if (!texture || currentStep >= processSteps.length) return;
+      currentStep += 1;
+      drawTexture();
+      updateStepUi();
+    }
+
+    function parseOBJ(objText) {
+      const vertices = [];
+      const uvs = [];
+      const faces = [];
+      objText.split(/\r?\n/).forEach((rawLine) => {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) return;
+        const parts = line.split(/\s+/);
+        if (parts[0] === 'v' && parts.length >= 4) {
+          vertices.push([Number(parts[1]), Number(parts[2]), Number(parts[3])]);
+        } else if (parts[0] === 'vt' && parts.length >= 3) {
+          uvs.push([Number(parts[1]), Number(parts[2])]);
+        } else if (parts[0] === 'f' && parts.length >= 4) {
+          const tokens = parts.slice(1).map((token) => {
+            const pair = token.split('/');
+            return {
+              v: resolveIndex(pair[0], vertices.length),
+              vt: pair[1] ? resolveIndex(pair[1], uvs.length) : -1,
+            };
+          }).filter((token) => token.v >= 0);
+          for (let i = 1; i < tokens.length - 1; i += 1) {
+            faces.push([tokens[0], tokens[i], tokens[i + 1]]);
+          }
+        }
+      });
+      if (!vertices.length || !faces.length) throw new Error('OBJ 内容不可用');
+      return { vertices, uvs, faces };
+    }
+
+    function resolveIndex(value, length) {
+      const n = Number.parseInt(value, 10);
+      if (!Number.isFinite(n)) return -1;
+      return n > 0 ? n - 1 : length + n;
+    }
+
+    function buildGeometry(parsed) {
+      const { vertices, uvs, faces } = parsed;
+      const mins = [Infinity, Infinity, Infinity];
+      const maxs = [-Infinity, -Infinity, -Infinity];
+      vertices.forEach((vertex) => {
+        for (let axis = 0; axis < 3; axis += 1) {
+          mins[axis] = Math.min(mins[axis], vertex[axis]);
+          maxs[axis] = Math.max(maxs[axis], vertex[axis]);
+        }
+      });
+      const center = [
+        (mins[0] + maxs[0]) * 0.5,
+        (mins[1] + maxs[1]) * 0.5,
+        (mins[2] + maxs[2]) * 0.5,
+      ];
+      const width = Math.max(maxs[0] - mins[0], 1e-6);
+      const height = Math.max(maxs[1] - mins[1], 1e-6);
+      const depth = Math.max(maxs[2] - mins[2], 1e-6);
+      const scaleBase = Math.max(width, height, depth, 1e-6);
+      const positions = new Float32Array(faces.length * 9);
+      const uvArray = new Float32Array(faces.length * 6);
+      let p = 0;
+      let u = 0;
+      faces.forEach((faceTokens) => {
+        faceTokens.forEach((token) => {
+          const vertex = vertices[token.v];
+          // Preserve the 3DDFA-V3 reconstruction: only center and uniformly scale.
+          // Axis flips and depth compression would make the real OBJ look inverted/flat.
+          positions[p++] = (vertex[0] - center[0]) / scaleBase;
+          positions[p++] = (vertex[1] - center[1]) / scaleBase;
+          positions[p++] = (vertex[2] - center[2]) / scaleBase;
+          if (token.vt >= 0 && token.vt < uvs.length) {
+            const uv = uvs[token.vt];
+            uvArray[u++] = uv[0];
+            uvArray[u++] = 1 - uv[1];
+          } else {
+            uvArray[u++] = (vertex[0] - mins[0]) / width;
+            uvArray[u++] = 1 - ((vertex[1] - mins[1]) / height);
+          }
+        });
+      });
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    function initScene(geometry) {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(42, 1, 0.01, 20);
+      camera.position.set(0, 0, 2.35);
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      stage.appendChild(renderer.domElement);
+
+      texture = new THREE.CanvasTexture(textureCanvas);
+      texture.flipY = false;
+      texture.needsUpdate = true;
+      const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.05,
+        side: THREE.FrontSide,
+        roughness: 0.58,
+        metalness: 0.08,
+      });
+      const backMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        side: THREE.BackSide,
+        roughness: 0.86,
+        metalness: 0,
+      });
+      maskGroup = new THREE.Group();
+      maskBackMesh = new THREE.Mesh(geometry, backMaterial);
+      maskMesh = new THREE.Mesh(geometry, material);
+      maskGroup.add(maskBackMesh);
+      maskGroup.add(maskMesh);
+      scene.add(maskGroup);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+      const key = new THREE.DirectionalLight(0xfff2d0, 1.2);
+      key.position.set(1.2, 1.8, 2.2);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0x7fe5ff, 0.35);
+      rim.position.set(-2.2, 0.8, 1.4);
+      scene.add(rim);
+      resizeRenderer();
+      animate();
+    }
+
+    function resizeRenderer() {
+      if (!renderer || !camera) return;
+      const rect = stage.getBoundingClientRect();
+      renderer.setSize(rect.width, rect.height);
+      camera.aspect = rect.width / Math.max(1, rect.height);
+      camera.updateProjectionMatrix();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (maskGroup && !mouseDown) {
+        maskGroup.rotation.y += 0.002;
+        rotateY = maskGroup.rotation.y;
+      }
+      renderer.render(scene, camera);
+    }
+
+    async function boot() {
+      if (!window.THREE) {
+        showStatus('Three.js 未加载', '请确认网络可访问 Three.js 脚本，或改用项目本地构建方式打开页面。');
+        return;
+      }
+
+      const objUrl = getPersonalObjUrl();
+      if (!objUrl) {
+        showStatus('还没有用户个人专属 OBJ', '请先回到舞台，启动摄像头并完成第一次 3DDFA-V3 生成。这里不会使用通用 OBJ 代替。');
+        nextBtn.disabled = true;
+        return;
+      }
+
+      try {
+        const [objText, image] = await Promise.all([
+          fetchTextWithFallback(objUrl),
+          loadImage(face.image),
+        ]);
+        sourceImage = image;
+        prepareSourceCanvases();
+        drawTexture();
+        updateStepUi();
+        const geometry = buildGeometry(parseOBJ(objText));
+        initScene(geometry);
+        hideStatus();
+      } catch (error) {
+        showStatus('个人 OBJ 读取失败', '没有找到第一次 3DDFA-V3 生成的 personal_face.obj。请先回舞台完成一次真实生成，再进入这里绘制。');
+        nextBtn.disabled = true;
+      }
+    }
+
+    boot();
+  </script>
+  <script src="/legacy/xiaopu_floating_agent.js?v=20260529-typing-stream"></script>
+</body>
+</html>

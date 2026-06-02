@@ -1,0 +1,39 @@
+{
+  "sceneId": "classic-placeholder",
+  "sceneType": "classic-scene-3dgs",
+  "title": "经典川剧场景重建占位",
+  "status": "waiting-for-source-video-and-canto",
+  "claimLevel": "Classic Sichuan opera scene 3DGS module placeholder; waiting for source video, singing audio and AutoDL-trained splat assets.",
+  "description": "该模块独立于数字展厅，用于未来导入经典川剧场景视频、对应唱段和 3DGS 重建资产。",
+  "viewer": {
+    "type": "threejs-3dgs-classic-scene",
+    "entryUrl": "/classic_scene_3dgs.html?scene=classic-placeholder",
+    "navigation": [
+      "orbit",
+      "walk",
+      "audio timeline",
+      "camera trajectory"
+    ]
+  },
+  "assets": {
+    "splat": null,
+    "pointCloud": null,
+    "previewImage": null,
+    "sourceVideo": null
+  },
+  "canto": {
+    "title": "经典唱段待导入",
+    "opera": null,
+    "performer": null,
+    "audioUrl": null,
+    "lyricsUrl": null,
+    "startTime": 0,
+    "durationSeconds": null
+  },
+  "source": {
+    "type": "classic-sichuan-opera-video",
+    "description": "等待用户提供经典川剧场景视频和对应唱段。"
+  },
+  "createdAt": 1779965042.702512,
+  "updatedAt": 1779965042.702512
+}

@@ -1,0 +1,47 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Python environments / caches
+.venv/
+.venv-cpu/
+.codex-py/
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Node dependencies / build output
+node_modules/
+dist/
+.npm-cache/
+**/node_modules/
+**/dist/
+
+# Runtime jobs, generated logs, local checks
+backend/jobs/
+test-results/
+output/
+outputs/
+tmp/
+.codex-checks/
+.codex/
+.agents/
+*.log
+.codex-*.js
+.codex-*.log
+.codex-capcut-share-*.json
+
+# Local backups and generated video experiments
+backups/
+competition-video/
+ai-opera-hyperframes/out/
+remotion-tech-route/out/
+
+# External heavy model dependency. Restore it separately from 3DDFA-V3 upstream
+# and download weights locally; GitHub normal repositories reject >100 MB files.
+3DDFA-V3/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

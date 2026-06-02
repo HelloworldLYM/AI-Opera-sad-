@@ -1,0 +1,35 @@
+{
+  "name": "ai-opera-sad-edition",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "setup:cpu": "powershell -ExecutionPolicy Bypass -File scripts/setup-cpu.ps1",
+    "dev:cpu": "powershell -ExecutionPolicy Bypass -File scripts/start-cpu.ps1",
+    "setup:gpu": "powershell -ExecutionPolicy Bypass -File scripts/setup-gpu.ps1",
+    "dev:gpu": "powershell -ExecutionPolicy Bypass -File scripts/start-gpu.ps1",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.160.0",
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@mediapipe/hands": "^0.4.1675469240",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@types/three": "^0.160.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16"
+  }
+}

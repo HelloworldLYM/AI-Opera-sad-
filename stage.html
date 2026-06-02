@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/legacy/shanzi2.png" />
+    <title>川剧变脸体验馆</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #04070d;
+        --text: #f6f3e8;
+        --muted: rgba(246, 243, 232, 0.74);
+        --line: rgba(135, 213, 255, 0.18);
+        --panel: rgba(8, 14, 24, 0.74);
+        --accent: #7fe5ff;
+        --accent-soft: rgba(127, 229, 255, 0.18);
+        --accent-strong: #b8f5ff;
+        --gold: #ffe6ad;
+        --font-body:
+          'STFangsong', 'FangSong', 'Songti SC', 'Noto Serif SC', 'SimSun', 'Source Han Serif SC', serif;
+        --font-title:
+          'STKaiti', 'KaiTi', 'Kaiti SC', 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', serif;
+        --font-ui:
+          'STSong', 'SimSun', 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', serif;
+        --font-button:
+          'STKaiti', 'KaiTi', 'Kaiti SC', 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        font-size: 17px;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-body);
+        text-rendering: optimizeLegibility;
+        overflow-x: hidden;
+      }
+
+      body[data-mode='full'] {
+        --accent: #ffe6ad;
+        --accent-soft: rgba(255, 230, 173, 0.18);
+        --accent-strong: #fff1cb;
+      }
+
+      body::before,
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      body::before {
+        background:
+          radial-gradient(circle at 20% 22%, rgba(201, 32, 48, 0.22), transparent 24%),
+          radial-gradient(circle at 64% 24%, rgba(74, 196, 255, 0.24), transparent 20%),
+          radial-gradient(circle at 78% 76%, rgba(255, 222, 145, 0.12), transparent 22%),
+          linear-gradient(180deg, rgba(3, 5, 10, 0.22), rgba(3, 6, 14, 0.88)),
+          url('/legacy/main_poster_3d.png') center / cover no-repeat;
+        transform: scale(1.04);
+      }
+
+      body::after {
+        background:
+          repeating-linear-gradient(
+            90deg,
+            rgba(127, 229, 255, 0.034) 0,
+            rgba(127, 229, 255, 0.034) 1px,
+            transparent 1px,
+            transparent 88px
+          ),
+          repeating-linear-gradient(
+            180deg,
+            rgba(127, 229, 255, 0.018) 0,
+            rgba(127, 229, 255, 0.018) 1px,
+            transparent 1px,
+            transparent 68px
+          );
+        mix-blend-mode: screen;
+        opacity: 0.52;
+      }
+
+      button,
+      iframe {
+        font: inherit;
+      }
+
+      a,
+      button {
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      a:focus-visible,
+      button:focus-visible {
+        outline: 2px solid rgba(127, 229, 255, 0.84);
+        outline-offset: 4px;
+      }
+
+      .stage-shell {
+        position: relative;
+        z-index: 1;
+        width: min(1520px, calc(100% - 28px));
+        margin: 0 auto;
+        padding: 22px 0 30px;
+      }
+
+      .stage-topbar,
+      .stage-main,
+      .info-card {
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(8, 14, 24, 0.86), rgba(7, 12, 20, 0.72));
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(18px);
+      }
+
+      .stage-topbar,
+      .stage-main {
+        border-radius: 28px;
+      }
+
+      .stage-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 20px;
+      }
+
+      .topbar-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 8px 14px;
+        border: 1px solid rgba(255, 230, 163, 0.18);
+        border-radius: 999px;
+        background: rgba(255, 230, 163, 0.07);
+        color: var(--gold);
+        font-family: var(--font-ui);
+        font-size: 0.94rem;
+        letter-spacing: 0.2em;
+      }
+
+      .topbar-copy h1,
+      .side-panel h2 {
+        margin: 0;
+        font-family: var(--font-title);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+      }
+
+      .topbar-copy h1 {
+        font-size: clamp(2rem, 3.3vw, 3.1rem);
+      }
+
+      .topbar-copy p,
+      .panel-copy,
+      .info-card p,
+      .frame-note {
+        margin: 0;
+        color: var(--muted);
+        font-family: var(--font-body);
+        line-height: 1.78;
+        font-size: 1.1rem;
+        text-wrap: pretty;
+      }
+
+      .topbar-actions,
+      .mode-switch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .nav-button,
+      .mode-button,
+      .reload-button {
+        min-height: 46px;
+        padding: 13px 18px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 230, 163, 0.18);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text);
+        font-family: var(--font-button);
+        font-size: 1.06rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        transition:
+          transform 180ms ease,
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background-color 180ms ease;
+      }
+
+      .nav-button:hover,
+      .mode-button:hover,
+      .reload-button:hover {
+        transform: translateY(-2px);
+      }
+
+      .nav-button:active,
+      .mode-button:active,
+      .reload-button:active {
+        transform: translateY(0) scale(0.985);
+      }
+
+      .nav-button {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .stage-home-button {
+        position: fixed;
+        top: 18px;
+        right: 22px;
+        z-index: 20;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 18px;
+        border: 1px solid rgba(255, 230, 163, 0.26);
+        border-radius: 14px;
+        background: rgba(6, 11, 19, 0.74);
+        color: var(--text);
+        font-family: var(--font-button);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+        box-shadow:
+          0 18px 46px rgba(0, 0, 0, 0.34),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(14px);
+        transition:
+          transform 180ms ease,
+          border-color 180ms ease,
+          background-color 180ms ease;
+      }
+
+      .stage-home-button:hover {
+        transform: translateY(-2px);
+        border-color: rgba(127, 229, 255, 0.34);
+        background: rgba(10, 21, 34, 0.82);
+      }
+
+      .mode-button.is-active {
+        border-color: rgba(127, 229, 255, 0.28);
+        background:
+          linear-gradient(180deg, rgba(76, 176, 223, 0.15), rgba(17, 33, 47, 0.4)),
+          rgba(255, 255, 255, 0.03);
+        box-shadow:
+          0 18px 42px rgba(0, 0, 0, 0.28),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      }
+
+      .stage-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.46fr);
+        gap: 20px;
+        margin-top: 20px;
+        padding: 20px;
+        align-items: start;
+      }
+
+      .frame-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .frame-shell-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .frame-shell-head strong {
+        color: var(--accent-strong);
+        font-family: var(--font-ui);
+        font-size: 1.02rem;
+        letter-spacing: 0.08em;
+      }
+
+      .stage-frame {
+        position: relative;
+        min-height: min(82vh, 920px);
+        border-radius: 26px;
+        overflow: hidden;
+        border: 1px solid rgba(127, 229, 255, 0.16);
+        background:
+          radial-gradient(circle at 50% 42%, rgba(18, 61, 91, 0.28), transparent 28%),
+          rgba(1, 5, 9, 0.92);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.06),
+          0 30px 80px rgba(0, 0, 0, 0.45);
+      }
+
+      .stage-frame iframe,
+      .frame-grid,
+      .frame-scan,
+      .frame-glow,
+      .frame-corners {
+        position: absolute;
+      }
+
+      .stage-frame iframe {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #02060a;
+      }
+
+      .frame-grid,
+      .frame-scan,
+      .frame-glow,
+      .frame-corners {
+        pointer-events: none;
+      }
+
+      .frame-grid {
+        inset: 0;
+        background:
+          repeating-linear-gradient(
+            90deg,
+            rgba(127, 229, 255, 0.045) 0,
+            rgba(127, 229, 255, 0.045) 1px,
+            transparent 1px,
+            transparent 92px
+          ),
+          repeating-linear-gradient(
+            180deg,
+            rgba(127, 229, 255, 0.02) 0,
+            rgba(127, 229, 255, 0.02) 1px,
+            transparent 1px,
+            transparent 72px
+          );
+        mix-blend-mode: screen;
+      }
+
+      .frame-scan {
+        inset: -24% auto auto -18%;
+        width: 48%;
+        height: 160%;
+        background: linear-gradient(
+          115deg,
+          transparent 18%,
+          rgba(127, 229, 255, 0.08) 42%,
+          rgba(255, 230, 163, 0.14) 50%,
+          transparent 64%
+        );
+        transform: rotate(7deg);
+        animation: scanMove 9s ease-in-out infinite;
+      }
+
+      .frame-glow {
+        border-radius: 50%;
+        filter: blur(26px);
+      }
+
+      .frame-glow-left {
+        width: 26vw;
+        height: 26vw;
+        min-width: 210px;
+        min-height: 210px;
+        left: -8%;
+        bottom: -6%;
+        background: rgba(205, 34, 51, 0.22);
+      }
+
+      .frame-glow-right {
+        width: 22vw;
+        height: 22vw;
+        min-width: 180px;
+        min-height: 180px;
+        right: 8%;
+        top: 10%;
+        background: rgba(70, 201, 255, 0.18);
+      }
+
+      .frame-corners {
+        inset: 14px;
+        border-radius: 20px;
+        border: 1px solid rgba(127, 229, 255, 0.08);
+      }
+
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .side-panel h2 {
+        font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+      }
+
+      .info-card {
+        border-radius: 22px;
+        padding: 18px;
+      }
+
+      .info-card strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--accent-strong);
+        font-family: var(--font-title);
+        font-size: 1.18rem;
+      }
+
+      .mode-detail-list {
+        display: grid;
+        gap: 7px;
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .mode-detail-list li {
+        position: relative;
+        padding-left: 1rem;
+        color: rgba(246, 243, 232, 0.76);
+        font-family: var(--font-body);
+        font-size: 1.04rem;
+        line-height: 1.62;
+      }
+
+      .mode-detail-list li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.72em;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 10px var(--accent-soft);
+      }
+
+      .frame-note {
+        padding: 0 6px;
+      }
+
+      .boot-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          linear-gradient(180deg, rgba(4, 7, 13, 0.9), rgba(4, 7, 13, 0.96)),
+          url('/legacy/main_poster_3d.png') center / cover no-repeat;
+        transition:
+          opacity 520ms ease,
+          visibility 520ms ease;
+      }
+
+      .boot-screen.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .boot-card {
+        width: min(560px, calc(100% - 28px));
+        padding: 28px;
+        border-radius: 28px;
+        border: 1px solid rgba(127, 229, 255, 0.18);
+        background: linear-gradient(180deg, rgba(8, 14, 24, 0.86), rgba(7, 12, 20, 0.74));
+        box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
+        text-align: left;
+      }
+
+      .boot-card h2 {
+        margin: 16px 0 10px;
+        font-family: var(--font-title);
+        font-size: clamp(2.2rem, 4.2vw, 3.2rem);
+        letter-spacing: 0.1em;
+      }
+
+      .boot-card p {
+        margin: 0;
+        font-family: var(--font-body);
+        font-size: 1.06rem;
+        line-height: 1.78;
+      }
+
+      .boot-progress {
+        position: relative;
+        height: 6px;
+        margin-top: 18px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .boot-progress::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, var(--accent), var(--gold));
+        transform-origin: left center;
+        animation: bootProgress 1.15s ease forwards;
+      }
+
+      @keyframes scanMove {
+        0%,
+        100% {
+          transform: translateX(-4%) rotate(7deg);
+          opacity: 0.12;
+        }
+
+        50% {
+          transform: translateX(96%) rotate(7deg);
+          opacity: 0.4;
+        }
+      }
+
+      @keyframes bootProgress {
+        from {
+          transform: scaleX(0);
+        }
+
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @media (max-width: 1180px) {
+        .stage-main {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        html {
+          font-size: 16.5px;
+        }
+
+        .stage-shell {
+          width: min(100%, calc(100% - 16px));
+          padding-top: 10px;
+          padding-bottom: 18px;
+        }
+
+        .stage-topbar,
+        .stage-main {
+          padding: 16px;
+          border-radius: 22px;
+        }
+
+        .stage-topbar,
+        .frame-shell-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .topbar-actions,
+        .mode-switch {
+          width: 100%;
+        }
+
+        .nav-button,
+        .mode-button,
+        .reload-button {
+          width: 100%;
+        }
+
+        .stage-frame {
+          min-height: 72vh;
+          border-radius: 20px;
+        }
+
+        .boot-card {
+          padding: 22px;
+          border-radius: 22px;
+        }
+
+        .stage-home-button {
+          top: 12px;
+          right: 12px;
+          min-height: 40px;
+          padding: 9px 13px;
+          font-size: 0.92rem;
+        }
+
+      }
+
+      .stage-shell.is-gallery-only {
+        width: min(1740px, calc(100% - 20px));
+        padding: 10px 0 14px;
+      }
+
+      .stage-shell.is-gallery-only .stage-topbar,
+      .stage-shell.is-gallery-only .frame-shell-head,
+      .stage-shell.is-gallery-only .frame-note,
+      .stage-shell.is-gallery-only .side-panel,
+      .stage-shell.is-gallery-only .frame-grid,
+      .stage-shell.is-gallery-only .frame-scan,
+      .stage-shell.is-gallery-only .frame-glow,
+      .stage-shell.is-gallery-only .frame-corners {
+        display: none;
+      }
+
+      .stage-shell.is-gallery-only .stage-main {
+        grid-template-columns: 1fr;
+        min-height: calc(100vh - 24px);
+        margin-top: 0;
+        padding: 10px;
+      }
+
+      .stage-shell.is-gallery-only .frame-shell {
+        gap: 0;
+      }
+
+      .stage-shell.is-gallery-only .stage-frame {
+        min-height: calc(100vh - 44px);
+        border-radius: 22px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .frame-scan,
+        .boot-progress::after {
+          animation: none;
+        }
+
+        .boot-screen {
+          transition: opacity 160ms ease, visibility 160ms ease;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="/legacy/taste_refinement.css" />
+  </head>
+  <body data-mode="lite">
+    <audio id="ambientMusic" src="/legacy/audio/opera-background.mp3" loop preload="auto"></audio>
+    <a class="stage-home-button" href="/">返回首页</a>
+
+    <div class="boot-screen" id="bootScreen">
+      <div class="boot-card">
+        <span class="eyebrow">开场前</span>
+        <h2 id="bootTitle">正在为你开场</h2>
+        <p id="bootText">请允许相机权限，页面准备好后会自动开始。</p>
+        <div class="boot-progress"></div>
+      </div>
+    </div>
+
+    <div class="stage-shell is-gallery-only">
+      <header class="stage-topbar">
+        <div class="topbar-copy">
+          <span class="eyebrow">AI × 梨园幻境</span>
+          <h1 id="stageTitle">轻云入戏</h1>
+          <p id="stageSubtitle">允许相机权限后，先试挥手和转头；想看更震撼的效果，再试舞扇遮脸和侧头举手。</p>
+        </div>
+
+      <div class="topbar-actions">
+        <a class="nav-button" href="/">返回首页</a>
+        <button class="reload-button" id="reloadButton" type="button">重新开始</button>
+      </div>
+      </header>
+
+      <main class="stage-main">
+        <section class="frame-shell">
+          <div class="frame-shell-head">
+            <strong id="frameModeLabel">当前模式 / 轻云入戏</strong>
+
+            <div class="mode-switch">
+              <button class="mode-button" data-mode="lite" type="button">轻云入戏</button>
+              <button class="mode-button" data-mode="full" type="button">华彩入境</button>
+            </div>
+          </div>
+
+          <div class="stage-frame">
+            <iframe
+              id="stageFrame"
+              title="川剧变脸体验舞台"
+              loading="eager"
+              allow="camera; microphone; fullscreen"
+            ></iframe>
+            <div class="frame-grid"></div>
+            <div class="frame-scan"></div>
+            <div class="frame-glow frame-glow-left"></div>
+            <div class="frame-glow frame-glow-right"></div>
+            <div class="frame-corners"></div>
+          </div>
+
+          <p class="frame-note">
+            请允许浏览器使用相机，并尽量让面部保持在画面中央；想体验吐火效果时，再试侧头并举起同侧的手。
+          </p>
+        </section>
+
+        <aside class="side-panel">
+          <div class="info-card">
+            <strong>开场前</strong>
+            <p>
+              找一处光线均匀的位置，正对镜头开始体验。环境越稳定，动作反馈通常越自然。
+            </p>
+          </div>
+
+          <div class="info-card">
+            <strong>当前模式</strong>
+            <p class="panel-copy" id="modeDescription">
+              画面更稳、更顺，适合大多数电脑和浏览器环境。
+            </p>
+            <ul class="mode-detail-list" id="modeDetailList"></ul>
+          </div>
+
+          <div class="info-card">
+            <strong>操作提示</strong>
+            <p>挥手、转头可以触发变脸；想体验喷火，请侧头并举起同侧的手；想体验舞扇变脸，请握拳把扇子抬到脸前。</p>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script>
+      const modeMeta = {
+        lite: {
+          label: '轻云入戏',
+          subtitle: '允许相机权限后，先试挥手和转头，再试舞扇遮脸和侧头举手。',
+          description: '画面更稳、更顺，适合大多数电脑和浏览器环境。',
+          details: ['保留核心变脸、舞扇、吐火玩法', '陈列馆按需入藏，本次最多精选 6 张', '更适合首次体验或普通电脑'],
+          boot: '正在为你打开舞台，请稍候。',
+        },
+        full: {
+          label: '华彩入境',
+          subtitle: '光影更饱满，适合直接解锁舞扇遮脸与吐火效果。',
+          description: '舞台光影与层次更丰富，适合性能更强的设备。',
+          details: ['保留完整舞台光影与氛围层次', '陈列馆自动入藏，本次最多收满 12 张', '适合性能更强的设备展示完整效果'],
+          boot: '灯光正在升起，请稍候。',
+        },
+      };
+
+      const bootScreen = document.getElementById('bootScreen');
+      const bootTitle = document.getElementById('bootTitle');
+      const bootText = document.getElementById('bootText');
+      const stageTitle = document.getElementById('stageTitle');
+      const stageSubtitle = document.getElementById('stageSubtitle');
+      const frameModeLabel = document.getElementById('frameModeLabel');
+      const modeDescription = document.getElementById('modeDescription');
+      const modeDetailList = document.getElementById('modeDetailList');
+      const stageFrame = document.getElementById('stageFrame');
+      const reloadButton = document.getElementById('reloadButton');
+      const modeButtons = Array.from(document.querySelectorAll('[data-mode]'));
+      const ambientMusic = document.getElementById('ambientMusic');
+
+      let currentMode = 'lite';
+
+      function tryPlayMusic() {
+        ambientMusic.volume = 0.32;
+        ambientMusic.loop = true;
+        ambientMusic.play()
+          .catch(() => {});
+      }
+
+      function unlockMusic() {
+        if (!ambientMusic.paused) return;
+        tryPlayMusic();
+      }
+
+      document.addEventListener('pointerdown', unlockMusic);
+      document.addEventListener('keydown', unlockMusic);
+      tryPlayMusic();
+
+      function buildStageSrc(mode) {
+        return `/legacy/swipe_demo_web.html?mode=${mode}&autoEnter=1&t=${Date.now()}`;
+      }
+
+      function showBoot(mode, title) {
+        const meta = modeMeta[mode];
+        bootTitle.textContent = title || `正在进入${meta.label}`;
+        bootText.textContent = meta.boot;
+        bootScreen.classList.remove('is-hidden');
+        window.setTimeout(() => {
+          bootScreen.classList.add('is-hidden');
+        }, 1200);
+      }
+
+      function applyMode(mode, options) {
+        const meta = modeMeta[mode];
+        const shouldReload = !options || options.reload !== false;
+        const shouldUpdateHistory = !options || options.updateHistory !== false;
+
+        currentMode = mode;
+        document.body.dataset.mode = mode;
+        document.title = `${meta.label} - 川剧变脸体验馆`;
+        stageTitle.textContent = meta.label;
+        stageSubtitle.textContent = meta.subtitle;
+        frameModeLabel.textContent = `当前模式 / ${meta.label}`;
+        modeDescription.textContent = meta.description;
+        modeDetailList.innerHTML = '';
+        meta.details.forEach((detail) => {
+          const item = document.createElement('li');
+          item.textContent = detail;
+          modeDetailList.appendChild(item);
+        });
+
+        modeButtons.forEach((button) => {
+          button.classList.toggle('is-active', button.dataset.mode === mode);
+        });
+
+        if (shouldReload) {
+          stageFrame.src = buildStageSrc(mode);
+        }
+
+        if (shouldUpdateHistory) {
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.set('mode', mode);
+          nextUrl.searchParams.set('entry', 'portal');
+          window.history.replaceState({}, '', nextUrl);
+        }
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const initialMode = params.get('mode') === 'full' ? 'full' : 'lite';
+
+      applyMode(initialMode, { reload: true, updateHistory: false });
+
+      let hasPortalEntry = false;
+      try {
+        const storedMode = window.sessionStorage.getItem('stage-entry-mode');
+        hasPortalEntry = params.get('entry') === 'portal' || storedMode === initialMode;
+        window.sessionStorage.removeItem('stage-entry-mode');
+        window.sessionStorage.removeItem('stage-entry-time');
+      } catch {
+        hasPortalEntry = params.get('entry') === 'portal';
+      }
+
+      if (hasPortalEntry) {
+        showBoot(initialMode);
+      } else {
+        bootScreen.classList.add('is-hidden');
+      }
+
+      modeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const nextMode = button.dataset.mode === 'full' ? 'full' : 'lite';
+          if (nextMode === currentMode) return;
+          showBoot(nextMode, '舞台正在换景');
+          applyMode(nextMode);
+        });
+      });
+
+      reloadButton.addEventListener('click', () => {
+        showBoot(currentMode, '重新开场');
+        applyMode(currentMode, { reload: true, updateHistory: false });
+      });
+    </script>
+    <script src="/legacy/xiaopu_floating_agent.js?v=20260529-typing-stream"></script>
+  </body>
+</html>

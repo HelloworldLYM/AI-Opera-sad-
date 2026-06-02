@@ -1,0 +1,12 @@
+{
+  "name": "ai-opera-hyperframes",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "preview": "npx hyperframes preview --port 3022",
+    "lint": "npx hyperframes lint",
+    "inspect": "npx hyperframes inspect --samples 12",
+    "render": "npx hyperframes render --output out/ai-opera-hyperframes.mp4 --fps 30 --quality standard"
+  }
+}

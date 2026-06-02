@@ -1,0 +1,24 @@
+{
+  "sceneId": "demo-stage",
+  "title": "AI-Opera 川剧数字展厅",
+  "sceneType": "museum-gallery",
+  "status": "personal-mask-gallery",
+  "claimLevel": "Interactive digital museum using personalized OBJ masks with UV facepaint textures.",
+  "description": "个性化三维脸谱模型、UV 纹样映射、GraphRAG 文化关系与沉浸式展陈空间在同一个场景中并置。",
+  "viewer": {
+    "type": "threejs-free-explore",
+    "entryUrl": "/digital_exhibition_viewer.html?scene=demo-stage",
+    "navigation": [
+      "orbit",
+      "walk",
+      "zoom",
+      "pan"
+    ]
+  },
+  "assets": {
+    "pointCloud": null,
+    "previewImage": null
+  },
+  "createdAt": 0,
+  "updatedAt": 0
+}

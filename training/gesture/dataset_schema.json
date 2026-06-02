@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "labels": [
+    "vertical_swipe",
+    "cover_face",
+    "head_shake",
+    "head_nod",
+    "raise_hand",
+    "idle"
+  ],
+  "sample": {
+    "id": "gesture_...",
+    "label": "vertical_swipe",
+    "source": "ai-opera-mediapipe-browser",
+    "frames": [
+      {
+        "faceBox": {
+          "cx": 0.5,
+          "cy": 0.5,
+          "width": 0.2,
+          "height": 0.3
+        },
+        "faceAnchors": [[0.5, 0.4, 0.0]],
+        "hands": [[[0.3, 0.4, 0.0]]],
+        "selectedHand": [[0.3, 0.4, 0.0]],
+        "yaw": 0.0,
+        "pitch": 0.0,
+        "detector": {
+          "triggered": false,
+          "triggerType": "",
+          "direction": 0,
+          "state": 0
+        }
+      }
+    ]
+  },
+  "quality": {
+    "targetPerLabel": 30,
+    "readyForTraining": false,
+    "byLabel": {
+      "vertical_swipe": 0,
+      "cover_face": 0,
+      "head_shake": 0,
+      "head_nod": 0,
+      "raise_hand": 0,
+      "idle": 0
+    },
+    "qualityWarnings": []
+  }
+}

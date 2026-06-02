@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>脸谱收藏馆</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      color-scheme: dark;
+      --bg: #04070d;
+      --text: #f6f3e8;
+      --muted: rgba(246, 243, 232, 0.72);
+      --line: rgba(127, 229, 255, 0.18);
+      --line-strong: rgba(255, 230, 173, 0.32);
+      --gold: #ffe6ad;
+      --gold-deep: #d7a84a;
+      --cyan: #7fe5ff;
+      --red: #d92d20;
+      --panel: rgba(8, 14, 24, 0.74);
+      --font-title: "STKaiti", "KaiTi", "Kaiti SC", "Songti SC", "Noto Serif SC", "Source Han Serif SC", serif;
+      --font-body: "STFangsong", "FangSong", "Songti SC", "Noto Serif SC", "SimSun", "Source Han Serif SC", serif;
+      --font-ui: "STSong", "SimSun", "Songti SC", "Noto Serif SC", "Source Han Serif SC", serif;
+    }
+
+    html {
+      font-size: 17px;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      text-rendering: optimizeLegibility;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      z-index: -3;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(217, 45, 32, 0.2), transparent 24%),
+        radial-gradient(circle at 64% 20%, rgba(127, 229, 255, 0.18), transparent 20%),
+        radial-gradient(circle at 74% 76%, rgba(255, 230, 173, 0.12), transparent 24%),
+        linear-gradient(180deg, rgba(4, 7, 13, 0.36), rgba(4, 7, 13, 0.94)),
+        url("gallary_bg.png") center center / cover no-repeat,
+        #120303;
+    }
+
+    body::after {
+      z-index: -2;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(127, 229, 255, 0.032) 0,
+          rgba(127, 229, 255, 0.032) 1px,
+          transparent 1px,
+          transparent 88px
+        ),
+        repeating-linear-gradient(
+          180deg,
+          rgba(127, 229, 255, 0.016) 0,
+          rgba(127, 229, 255, 0.016) 1px,
+          transparent 1px,
+          transparent 68px
+        );
+      opacity: 0.52;
+      mix-blend-mode: screen;
+    }
+
+    a,
+    button {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid rgba(127, 229, 255, 0.84);
+      outline-offset: 4px;
+    }
+
+    .gallery-page {
+      position: relative;
+      min-height: 100vh;
+      width: min(1480px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 30px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(8, 14, 24, 0.86), rgba(7, 12, 20, 0.72));
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 230, 163, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 230, 163, 0.07);
+      color: var(--gold);
+      font-family: var(--font-ui);
+      font-size: 0.92rem;
+      letter-spacing: 0.18em;
+    }
+
+    h1 {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: clamp(2.15rem, 4.4vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: 0.12em;
+      text-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.72),
+        0 0 28px rgba(255, 215, 96, 0.18);
+    }
+
+    .topbar-copy p,
+    .face-story,
+    .face-meta {
+      max-width: 64ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.78;
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .nav-button,
+    .detail-link,
+    .control-button {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 17px;
+      border: 1px solid rgba(255, 230, 163, 0.2);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-family: var(--font-title);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        background-color 180ms ease;
+    }
+
+    .nav-button:hover,
+    .detail-link:hover,
+    .control-button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(127, 229, 255, 0.32);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.26);
+    }
+
+    .detail-link {
+      color: #321400;
+      background: linear-gradient(135deg, #ffe6ad, #d7a84a 62%, #9d5b12);
+      border-color: rgba(255, 230, 163, 0.48);
+    }
+
+    .stage {
+      position: relative;
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(255, 230, 173, 0.08), transparent 28%),
+        linear-gradient(180deg, rgba(8, 14, 24, 0.86), rgba(4, 7, 13, 0.8));
+      box-shadow: 0 34px 100px rgba(0, 0, 0, 0.48);
+      backdrop-filter: blur(18px);
+    }
+
+    .arc-viewport {
+      position: relative;
+      min-height: min(68vh, 720px);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .arc-viewport::before {
+      content: "";
+      position: absolute;
+      top: -18%;
+      left: 50%;
+      z-index: 0;
+      width: min(44vw, 560px);
+      height: 82%;
+      transform: translateX(-50%);
+      clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
+      background:
+        radial-gradient(ellipse at 50% 4%, rgba(255, 248, 216, 0.42), transparent 18%),
+        linear-gradient(180deg, rgba(255, 238, 188, 0.34), rgba(241, 191, 89, 0.17) 32%, rgba(190, 110, 28, 0.05) 74%, transparent),
+        linear-gradient(90deg, transparent 10%, rgba(255, 255, 240, 0.12) 44%, rgba(255, 197, 86, 0.05) 56%, transparent 90%);
+      filter: blur(2.8px);
+      opacity: 0.88;
+    }
+
+    .arc-viewport::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 68%;
+      z-index: 0;
+      width: min(50vw, 700px);
+      height: 150px;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 230, 173, 0.24), rgba(127, 229, 255, 0.08) 46%, transparent 74%);
+      filter: blur(12px);
+    }
+
+    .edge-fade {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 6;
+      width: 18%;
+      pointer-events: none;
+    }
+
+    .edge-fade-left {
+      left: 0;
+      background: linear-gradient(90deg, rgba(4, 7, 13, 0.96), rgba(4, 7, 13, 0.54) 48%, transparent);
+    }
+
+    .edge-fade-right {
+      right: 0;
+      background: linear-gradient(270deg, rgba(4, 7, 13, 0.96), rgba(4, 7, 13, 0.54) 48%, transparent);
+    }
+
+    .arc-track {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0%, #000 14%, #000 86%, transparent 100%);
+    }
+
+    .mask-orbit-item {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: clamp(116px, 12vw, 168px);
+      min-height: clamp(178px, 18vw, 238px);
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      opacity: var(--item-opacity);
+      z-index: var(--item-z);
+      transform:
+        translate(-50%, -50%)
+        translateX(var(--item-x))
+        translateY(var(--item-y))
+        rotate(var(--item-rotate))
+        scale(var(--item-scale));
+      filter: brightness(var(--item-brightness)) blur(var(--item-blur));
+      transition:
+        transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 260ms ease,
+        filter 260ms ease;
+      will-change: transform, opacity, filter;
+    }
+
+    .mask-orbit-item::before {
+      content: "";
+      position: absolute;
+      inset: -68% -92% -36%;
+      z-index: -1;
+      border-radius: 50%;
+      opacity: 0;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 251, 222, 0.58), rgba(255, 226, 151, 0.22) 18%, transparent 38%),
+        linear-gradient(180deg, rgba(255, 239, 190, 0.3), rgba(255, 190, 76, 0.11) 36%, rgba(127, 229, 255, 0.045) 64%, transparent 82%),
+        radial-gradient(ellipse at 50% 76%, rgba(255, 220, 128, 0.16), transparent 54%);
+      clip-path: polygon(42% 0, 58% 0, 91% 100%, 9% 100%);
+      filter: blur(10px);
+      mix-blend-mode: screen;
+      transition: opacity 260ms ease, filter 260ms ease;
+    }
+
+    .mask-orbit-item::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -18%;
+      z-index: 0;
+      width: 72%;
+      height: 28%;
+      transform: translateX(-50%);
+      border-radius: 50%;
+      background:
+        radial-gradient(ellipse at center, rgba(255, 250, 222, 0.44), rgba(255, 218, 128, 0.2) 34%, transparent 72%);
+      filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mask-holder {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .mask-holder img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.58));
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .mask-name {
+      color: rgba(246, 243, 232, 0.82);
+      font-family: var(--font-title);
+      font-size: 1.04rem;
+      letter-spacing: 0.12em;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.82);
+      white-space: nowrap;
+    }
+
+    .mask-orbit-item.is-active {
+      --item-opacity: 1 !important;
+      --item-scale: 1.24 !important;
+      --item-brightness: 1.12 !important;
+      --item-blur: 0px !important;
+      cursor: default;
+    }
+
+    .mask-orbit-item.is-active::before {
+      opacity: 1;
+      filter: blur(7px);
+    }
+
+    .mask-orbit-item.is-active::after {
+      opacity: 0.86;
+    }
+
+    .mask-orbit-item.is-active .mask-holder {
+      position: relative;
+      overflow: hidden;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .mask-orbit-item.is-active .mask-holder::after {
+      content: none;
+    }
+
+    .mask-orbit-item.is-active .mask-name {
+      color: var(--gold);
+    }
+
+    .detail-panel {
+      position: relative;
+      z-index: 8;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      padding: 22px 24px 24px;
+      border-top: 1px solid rgba(127, 229, 255, 0.14);
+      background:
+        linear-gradient(90deg, rgba(4, 7, 13, 0.72), rgba(11, 18, 28, 0.78), rgba(4, 7, 13, 0.72));
+    }
+
+    .face-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .face-meta {
+      color: var(--cyan);
+      font-family: var(--font-ui);
+      font-size: 0.98rem;
+      letter-spacing: 0.12em;
+    }
+
+    .face-title-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .face-title {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: clamp(2rem, 3.2vw, 3rem);
+      letter-spacing: 0.16em;
+      text-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.72),
+        0 0 22px rgba(255, 215, 96, 0.16);
+    }
+
+    .face-role {
+      color: rgba(255, 230, 173, 0.86);
+      font-family: var(--font-title);
+      font-size: 1.12rem;
+      letter-spacing: 0.12em;
+    }
+
+    .face-story {
+      max-width: 72ch;
+    }
+
+    .detail-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      min-width: min(420px, 100%);
+    }
+
+    .counter {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 16px;
+      border: 1px solid rgba(127, 229, 255, 0.18);
+      border-radius: 14px;
+      color: rgba(246, 243, 232, 0.78);
+      background: rgba(255, 255, 255, 0.035);
+      font-family: var(--font-ui);
+      font-size: 0.98rem;
+      letter-spacing: 0.1em;
+    }
+
+    .media-panel {
+      position: relative;
+      z-index: 9;
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(280px, 1.1fr);
+      gap: 18px;
+      padding: 22px 24px 24px;
+      border-top: 1px solid rgba(255, 230, 173, 0.16);
+      background:
+        radial-gradient(circle at 16% 0%, rgba(217, 45, 32, 0.16), transparent 34%),
+        linear-gradient(90deg, rgba(8, 14, 24, 0.88), rgba(13, 18, 26, 0.78));
+    }
+
+    .media-copy,
+    .video-agent {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .media-kicker,
+    .agent-status {
+      color: var(--cyan);
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      letter-spacing: 0.14em;
+    }
+
+    .canto-title {
+      margin: 0;
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: clamp(1.35rem, 2.2vw, 2rem);
+      letter-spacing: 0.12em;
+    }
+
+    .canto-note {
+      margin: 0;
+      color: rgba(246, 243, 232, 0.72);
+      font-size: 1rem;
+      line-height: 1.68;
+    }
+
+    .audio-controls {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 46px;
+    }
+
+    .timeline {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(246, 243, 232, 0.12);
+    }
+
+    .timeline-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--gold-deep), var(--cyan));
+    }
+
+    .timecode {
+      min-width: 54px;
+      color: rgba(246, 243, 232, 0.72);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.86rem;
+      text-align: right;
+    }
+
+    .video-results {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .video-link {
+      display: grid;
+      gap: 5px;
+      min-height: 78px;
+      padding: 11px 12px;
+      border: 1px solid rgba(127, 229, 255, 0.16);
+      border-radius: 14px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.035);
+      text-decoration: none;
+      transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+    }
+
+    .video-link:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 230, 173, 0.34);
+      background: rgba(255, 230, 173, 0.065);
+    }
+
+    .video-link strong {
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+    }
+
+    .video-link span {
+      color: rgba(246, 243, 232, 0.64);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 960px) {
+      .topbar,
+      .detail-panel,
+      .media-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .topbar-actions,
+      .detail-controls {
+        justify-content: flex-start;
+      }
+
+      .arc-viewport {
+        min-height: 62vh;
+      }
+    }
+
+    @media (max-width: 760px) {
+      html {
+        font-size: 16.5px;
+      }
+
+      .gallery-page {
+        width: min(100%, calc(100% - 16px));
+        padding-top: 10px;
+        padding-bottom: 18px;
+      }
+
+      .topbar,
+      .stage {
+        border-radius: 22px;
+      }
+
+      .topbar {
+        padding: 16px;
+      }
+
+      .topbar-actions,
+      .detail-controls {
+        width: 100%;
+      }
+
+      .nav-button,
+      .detail-link,
+      .control-button,
+      .counter {
+        width: 100%;
+      }
+
+      .audio-controls,
+      .video-results {
+        grid-template-columns: 1fr;
+      }
+
+      .timecode {
+        text-align: left;
+      }
+
+      .arc-viewport {
+        min-height: 58vh;
+      }
+
+      .mask-orbit-item {
+        width: clamp(96px, 28vw, 128px);
+      }
+
+      .detail-panel {
+        padding: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .mask-orbit-item,
+      .nav-button,
+      .detail-link,
+      .control-button {
+        transition: none;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="/legacy/taste_refinement.css" />
+</head>
+<body>
+  <main class="gallery-page">
+    <header class="topbar">
+      <div class="topbar-copy">
+        <span class="eyebrow">个人脸谱收藏馆</span>
+        <h1>脸谱收藏馆</h1>
+        <p>传统谱式按舞台弧线展开，切换脸谱时同步匹配剧目唱段与原视频检索入口。</p>
+      </div>
+      <nav class="topbar-actions" aria-label="页面导航">
+        <a class="nav-button" href="/stage.html?entry=portal">返回舞台</a>
+      </nav>
+    </header>
+
+    <section class="stage" aria-label="脸谱陈列舞台">
+      <div class="arc-viewport" id="arcViewport">
+        <div class="arc-track" id="arcTrack"></div>
+        <div class="edge-fade edge-fade-left"></div>
+        <div class="edge-fade edge-fade-right"></div>
+      </div>
+
+      <aside class="detail-panel">
+        <div class="face-copy">
+          <div class="face-meta" id="faceMeta">脸谱</div>
+          <div class="face-title-row">
+            <h2 class="face-title" id="faceTitle">关羽</h2>
+            <span class="face-role" id="faceRole">红整脸</span>
+          </div>
+          <p class="face-story" id="faceStory"></p>
+        </div>
+
+        <div class="detail-controls">
+          <button class="control-button" id="prevButton" type="button">上一张</button>
+          <span class="counter" id="faceCounter">01 / 12</span>
+          <button class="control-button" id="nextButton" type="button">下一张</button>
+          <a class="detail-link" id="detailLink" href="face_knowledge.html?face=guanyu">了解更多详情</a>
+        </div>
+      </aside>
+
+      <section class="media-panel" aria-label="剧目唱段与原视频">
+        <div class="media-copy">
+          <span class="media-kicker" id="operaMeta">剧目唱段</span>
+          <h3 class="canto-title" id="cantoTitle">《华容道》经典唱段</h3>
+          <p class="canto-note" id="cantoNote">切换脸谱后，系统会自动匹配并播放对应剧目唱段，同时提供原视频检索入口。</p>
+          <div class="audio-controls">
+            <button class="control-button" id="playCantoButton" type="button">播放唱段</button>
+            <div class="timeline" aria-hidden="true"><div class="timeline-fill" id="cantoFill"></div></div>
+            <span class="timecode" id="cantoTime">00:00</span>
+          </div>
+          <audio id="cantoAudio" preload="metadata"></audio>
+        </div>
+
+        <div class="video-agent">
+          <span class="agent-status" id="agentStatus">Agent 等待当前脸谱。</span>
+          <div class="video-results" id="videoResults"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="face_knowledge_data.js"></script>
+  <script src="opera_media_catalog.js?v=20260528-link-fix"></script>
+  <script>
+    (function () {
+      const preferredOrder = [
+        'guanyu',
+        'zhangfei',
+        'dianwei',
+        'chengyaojin',
+        'jiangwei',
+        'xiahouyuan',
+        'yuwenchengdu',
+        'julingshen',
+        'fahai',
+        'douerdun',
+        'zhengziming',
+        'nirong',
+      ];
+
+      const data = window.FaceKnowledgeData || {};
+      const faces = preferredOrder
+        .filter((key) => data[key])
+        .map((key) => ({ key, ...data[key] }));
+
+      const arcViewport = document.getElementById('arcViewport');
+      const arcTrack = document.getElementById('arcTrack');
+      const faceMeta = document.getElementById('faceMeta');
+      const faceTitle = document.getElementById('faceTitle');
+      const faceRole = document.getElementById('faceRole');
+      const faceStory = document.getElementById('faceStory');
+      const detailLink = document.getElementById('detailLink');
+      const faceCounter = document.getElementById('faceCounter');
+      const prevButton = document.getElementById('prevButton');
+      const nextButton = document.getElementById('nextButton');
+      const operaMeta = document.getElementById('operaMeta');
+      const cantoTitle = document.getElementById('cantoTitle');
+      const cantoNote = document.getElementById('cantoNote');
+      const playCantoButton = document.getElementById('playCantoButton');
+      const cantoFill = document.getElementById('cantoFill');
+      const cantoTime = document.getElementById('cantoTime');
+      const cantoAudio = document.getElementById('cantoAudio');
+      const agentStatus = document.getElementById('agentStatus');
+      const videoResults = document.getElementById('videoResults');
+      const mediaCatalog = window.OperaMediaCatalog || { faces: {}, fallbackAudioUrl: '/legacy/audio/opera-background.mp3' };
+
+      let activeIndex = 0;
+      let wheelLock = false;
+      let mediaToken = 0;
+      let wantsCantoPlayback = false;
+
+      const params = new URLSearchParams(window.location.search);
+      const initialFace = params.get('face') || params.get('title');
+      if (initialFace && window.resolveFaceKnowledgeKey) {
+        const resolved = window.resolveFaceKnowledgeKey(initialFace);
+        const foundIndex = faces.findIndex((face) => face.key === resolved);
+        if (foundIndex >= 0) activeIndex = foundIndex;
+      }
+
+      function padIndex(value) {
+        return String(value).padStart(2, '0');
+      }
+
+      function shortestOffset(index) {
+        const total = faces.length;
+        let offset = index - activeIndex;
+        if (offset > total / 2) offset -= total;
+        if (offset < -total / 2) offset += total;
+        return offset;
+      }
+
+      function updateItemPosition(button, index) {
+        const offset = shortestOffset(index);
+        const abs = Math.abs(offset);
+        const xStep = window.innerWidth < 760 ? 104 : 142;
+        const x = offset * xStep;
+        const y = Math.pow(abs, 1.45) * 20 + (abs === 0 ? -24 : 18);
+        const rotate = offset * -5.5;
+        const scale = Math.max(0.52, 1 - abs * 0.085);
+        const opacity = Math.max(0.18, 1 - abs * 0.13);
+        const brightness = Math.max(0.38, 1 - abs * 0.11);
+        const blur = abs > 4 ? 1.2 : 0;
+
+        button.style.setProperty('--item-x', `${x}px`);
+        button.style.setProperty('--item-y', `${y}px`);
+        button.style.setProperty('--item-rotate', `${rotate}deg`);
+        button.style.setProperty('--item-scale', scale);
+        button.style.setProperty('--item-opacity', opacity);
+        button.style.setProperty('--item-brightness', brightness);
+        button.style.setProperty('--item-blur', `${blur}px`);
+        button.style.setProperty('--item-z', String(100 - abs));
+        button.classList.toggle('is-active', index === activeIndex);
+        button.setAttribute('aria-current', index === activeIndex ? 'true' : 'false');
+      }
+
+      function fallbackMedia(face) {
+        const opera = (face.story?.[0]?.match(/《([^》]+)》/) || [null, '经典剧目'])[1];
+        const query = `戏曲 ${opera} ${face.title} 原版 全剧 经典唱段`;
+        return {
+          faceKey: face.key,
+          faceTitle: face.title,
+          opera,
+          cantoTitle: `《${opera}》经典唱段`,
+          cue: `${face.title} ${opera}`,
+          localAudioUrl: '',
+          fallbackAudioUrl: mediaCatalog.fallbackAudioUrl || '/legacy/audio/opera-background.mp3',
+          searchQuery: query,
+          videoCandidates: [
+            {
+              label: '川剧发展研究中心',
+              url: 'http://cjfzyjzx.scyishu.org.cn/',
+              note: `打开川剧发展研究中心官网，在站内检索《${opera}》`,
+            },
+            {
+              label: '梨园戏考·剧目资料',
+              url: `https://liyuan.xikao.com/play/${encodeURIComponent(opera)}`,
+              note: `直达《${opera}》剧目资料页，辅助查找剧种、版本与演出资料`,
+            },
+            {
+              label: '哔哩哔哩检索',
+              url: `https://search.bilibili.com/all?keyword=${encodeURIComponent(query)}`,
+              note: '跳转后选择全本、名家或官方上传版本',
+            },
+          ],
+        };
+      }
+
+      function localMediaFor(face) {
+        return mediaCatalog.faces?.[face.key] || fallbackMedia(face);
+      }
+
+      function formatTime(seconds) {
+        if (!Number.isFinite(seconds)) return '00:00';
+        const safe = Math.max(0, Math.floor(seconds));
+        const minutes = Math.floor(safe / 60);
+        const rest = safe % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+      }
+
+      function renderVideoLinks(media) {
+        const candidates = media.videoCandidates || [];
+        videoResults.innerHTML = candidates.map((candidate) => `
+          <a class="video-link" href="${candidate.url}">
+            <strong>${candidate.label}</strong>
+            <span>${candidate.note || '点击跳转检索并播放原剧视频'}</span>
+          </a>
+        `).join('');
+      }
+
+      function setAudioSource(media, shouldAutoPlay) {
+        const source = media.audioUrl
+          || (media.audioReady ? media.localAudioUrl : '')
+          || media.fallbackAudioUrl
+          || mediaCatalog.fallbackAudioUrl;
+        const sourceKey = `${media.faceKey || media.faceTitle || media.cantoTitle || 'current'}::${source || ''}`;
+        const sourceChanged = cantoAudio.dataset.sourceKey !== sourceKey;
+        cantoAudio.dataset.fallbackUrl = media.fallbackAudioUrl || mediaCatalog.fallbackAudioUrl || '';
+        cantoAudio.dataset.mediaTitle = media.cantoTitle || '经典唱段';
+        cantoAudio.dataset.sourceKey = sourceKey;
+        if (source && sourceChanged) {
+          cantoAudio.pause();
+          cantoAudio.removeAttribute('src');
+          cantoAudio.load();
+          cantoAudio.src = source;
+          cantoFill.style.width = '0%';
+          cantoTime.textContent = '00:00';
+        } else if (source && shouldAutoPlay) {
+          try {
+            cantoAudio.currentTime = 0;
+          } catch {
+            // Some browsers reject seeking before metadata is ready; playback still starts normally.
+          }
+          cantoFill.style.width = '0%';
+          cantoTime.textContent = '00:00';
+        }
+        if (shouldAutoPlay) playCurrentCanto();
+      }
+
+      async function resolveMedia(face, shouldAutoPlay = false) {
+        const token = ++mediaToken;
+        const local = localMediaFor(face);
+        applyMedia(face, local, shouldAutoPlay, token);
+        try {
+          const response = await fetch(`/api/opera/media/${encodeURIComponent(face.key)}`, { cache: 'no-store' });
+          if (!response.ok) return;
+          const remote = await response.json();
+          if (token === mediaToken) applyMedia(face, remote, wantsCantoPlayback || shouldAutoPlay, token);
+        } catch {
+          // Static preview mode has no backend; local catalog remains active.
+        }
+      }
+
+      function applyMedia(face, media, shouldAutoPlay, token = mediaToken) {
+        if (token !== mediaToken) return;
+        operaMeta.textContent = `${face.title} · ${media.opera || '经典剧目'}`;
+        cantoTitle.textContent = media.cantoTitle || `《${media.opera || '经典剧目'}》经典唱段`;
+        cantoNote.textContent = `已切换到 ${face.title} 对应的《${media.opera || '经典剧目'}》唱段；继续切换脸谱时，唱段会同步切换并播放。`;
+        agentStatus.textContent = media.agentSummary || `Agent 已检索：${media.searchQuery || media.opera || face.title}`;
+        renderVideoLinks(media);
+        setAudioSource(media, shouldAutoPlay);
+      }
+
+      function playCurrentCanto() {
+        wantsCantoPlayback = true;
+        cantoAudio.volume = 0.46;
+        cantoAudio.loop = true;
+        void cantoAudio.play().then(() => {
+          playCantoButton.textContent = '暂停唱段';
+        }).catch(() => {
+          playCantoButton.textContent = '播放唱段';
+        });
+      }
+
+      function updateDetails(options = {}) {
+        const active = faces[activeIndex];
+        if (!active) return;
+        window.__xiaopuGetContext = () => ({
+          currentFaceKey: active.key,
+          faceTitle: active.title,
+          faceMeta: `${active.title} · ${active.role || '脸谱'}`,
+          extra: {
+            opera: (mediaCatalog.faces?.[active.key] || {}).opera || '',
+            galleryIndex: activeIndex + 1,
+            galleryTotal: faces.length,
+          },
+        });
+        faceMeta.textContent = `第 ${padIndex(activeIndex + 1)} 张`;
+        faceTitle.textContent = active.title;
+        faceRole.textContent = active.role || '脸谱';
+        faceStory.textContent = (active.story && active.story[0]) || '';
+        detailLink.href = `face_knowledge.html?face=${encodeURIComponent(active.key)}&title=${encodeURIComponent(active.title)}`;
+        faceCounter.textContent = `${padIndex(activeIndex + 1)} / ${padIndex(faces.length)}`;
+        document.title = `${active.title} · 脸谱收藏馆`;
+        resolveMedia(active, Boolean(options.autoPlay));
+      }
+
+      function renderPositions(options = {}) {
+        const buttons = arcTrack.querySelectorAll('.mask-orbit-item');
+        buttons.forEach((button, index) => updateItemPosition(button, index));
+        updateDetails(options);
+      }
+
+      function goTo(index, options = { autoPlay: true }) {
+        const total = faces.length;
+        activeIndex = (index + total) % total;
+        renderPositions(options);
+      }
+
+      function createItems() {
+        arcTrack.innerHTML = '';
+        faces.forEach((face, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'mask-orbit-item';
+          button.setAttribute('aria-label', `查看${face.title}`);
+          button.innerHTML = `
+            <span class="mask-holder">
+              <img src="${face.image}" alt="${face.title}脸谱">
+            </span>
+            <span class="mask-name">${face.title}</span>
+          `;
+          button.addEventListener('click', () => goTo(index));
+          arcTrack.appendChild(button);
+        });
+        renderPositions({ autoPlay: false });
+      }
+
+      prevButton.addEventListener('click', () => goTo(activeIndex - 1));
+      nextButton.addEventListener('click', () => goTo(activeIndex + 1));
+
+      arcViewport.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        if (wheelLock) return;
+        const direction = event.deltaY > 0 || event.deltaX > 0 ? 1 : -1;
+        wheelLock = true;
+        goTo(activeIndex + direction);
+        window.setTimeout(() => {
+          wheelLock = false;
+        }, 190);
+      }, { passive: false });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+          goTo(activeIndex + 1);
+        }
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          goTo(activeIndex - 1);
+        }
+      });
+
+      window.addEventListener('resize', renderPositions);
+
+      playCantoButton.addEventListener('click', () => {
+        if (cantoAudio.paused) {
+          playCurrentCanto();
+        } else {
+          wantsCantoPlayback = false;
+          cantoAudio.pause();
+          playCantoButton.textContent = '播放唱段';
+        }
+      });
+
+      cantoAudio.addEventListener('timeupdate', () => {
+        cantoTime.textContent = formatTime(cantoAudio.currentTime);
+        const ratio = cantoAudio.duration ? cantoAudio.currentTime / cantoAudio.duration : 0;
+        cantoFill.style.width = `${Math.max(0, Math.min(100, ratio * 100))}%`;
+      });
+
+      cantoAudio.addEventListener('error', () => {
+        const fallbackUrl = cantoAudio.dataset.fallbackUrl;
+        if (fallbackUrl && cantoAudio.getAttribute('src') !== fallbackUrl) {
+          cantoAudio.src = fallbackUrl;
+          cantoNote.textContent = '唱段已随当前脸谱同步切换；继续切换脸谱时会自动更换并播放。';
+          if (wantsCantoPlayback) playCurrentCanto();
+        }
+      });
+
+      createItems();
+    })();
+  </script>
+  <script src="/legacy/xiaopu_floating_agent.js?v=20260529-typing-stream"></script>
+</body>
+</html>
