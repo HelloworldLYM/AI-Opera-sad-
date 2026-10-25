@@ -42,3 +42,37 @@ def test_run_agent_never_leaks_markdown_markers(monkeypatch):
     result = run_agent("RAG 是什么", current_face_key=None)
     assert "#" not in result["answer"]
     assert "*" not in result["answer"]
+
+
+def test_run_agent_tools_are_instrumented(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    result = run_agent("这张脸谱的寓意", current_face_key="guanyu")
+    for call in result["toolCalls"]:
+        assert call["status"] in {"ok", "empty"} or call["status"].startswith("error")
+        assert isinstance(call["latencyMs"], (int, float))
+        assert call["latencyMs"] >= 0
+
+
+def test_offline_answer_carries_citations(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    result = run_agent("变脸的技法有哪些", current_face_key=None)
+    assert isinstance(result.get("citations"), list)
+    assert result["citations"], "technique query should yield cited sources"
+    for citation in result["citations"]:
+        assert citation["sourceUrl"].startswith("http")
+        assert citation["source"]
+    assert "来源：" in result["answer"], "answer text must embed the source block"
+
+
+def test_history_is_sanitized(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    messy_history = [
+        {"role": "user", "content": "上一句用户输入"},
+        {"role": "system", "content": "should be dropped"},
+        {"role": "assistant", "content": "上一句助手回答"},
+        "not-a-dict",
+        {"role": "user"},  # no content
+    ]
+    result = run_agent("继续讲讲", current_face_key=None, history=messy_history)
+    assert result["provider"] == "local-rag"
+    assert result["toolContext"]["historyTurns"] == 2

@@ -629,6 +629,120 @@ ONLINE_DOCS = [
             "因此项目加入浏览器数据采集器，把关键点序列标注为挥手、遮脸、转头、点头、举手、静止，再上传 AutoDL 训练。"
         ),
     },
+    {
+        "id": "online-wikipedia-bianlian",
+        "title": "Bian lian：川剧变脸的英文综述条目",
+        "category": "online-source",
+        "tags": ["Wikipedia", "Bian lian", "变脸", "Sichuan opera", "川剧"],
+        "source": "Wikipedia",
+        "sourceUrl": "https://en.wikipedia.org/wiki/Bian_lian",
+        "text": (
+            "Wikipedia 的 Bian lian 条目将变脸描述为川剧的重要组成部分，流行于四川东部和南部等地，"
+            "演员通过挥手、转头等动作在观众难以察觉的速度中更换面具。"
+            "该条目为项目的英文介绍与 RAG 检索提供了通用的背景参照。"
+        ),
+    },
+    {
+        "id": "online-chengdu-opera-bianlian-guide",
+        "title": "扯脸：多层彩绘丝质面具的逐层切换",
+        "category": "online-source",
+        "tags": ["成都川剧", "扯脸", "che lian", "丝质面具", "技法", "变脸"],
+        "source": "Chengdu Sichuan Opera 官方指南",
+        "sourceUrl": "https://chengdusichuanopera.com/guides/bian-lian-face-changing-explained",
+        "text": (
+            "成都川剧官方指南介绍了变脸的主要技法，其中最著名的是扯脸（che lian）："
+            "演员预戴多层彩绘丝质面具，通过隐蔽牵引在动作掩护下逐层揭去。"
+            "项目的多脸谱切换与三维面罩资产正是对这种“多层脸谱”逻辑的数字化映射。"
+        ),
+    },
+    {
+        "id": "online-cqwl-facepaint-colors",
+        "title": "川剧脸谱的定色规律与巴蜀地域特征",
+        "category": "online-source",
+        "tags": ["重庆市文化和旅游研究院", "脸谱", "定色", "红色", "黑色", "颜色寓意"],
+        "source": "重庆市文化和旅游研究院",
+        "sourceUrl": "https://www.cqwl.org/web/article/1433541825799856128/web/content_1433541825799856128.html",
+        "text": (
+            "重庆市文化和旅游研究院的川剧脸谱专文指出，川剧脸谱在遵循中国戏曲普遍色彩象征习俗的基础上"
+            "彰显巴蜀地域特征：红色象征忠勇、耿直、有血性（如关羽），黑色象征不苟言笑、严肃、威严，"
+            "也象征刚烈勇猛。项目知识库中的颜色寓意文档与该定色规律保持一致。"
+        ),
+    },
+    {
+        "id": "online-thinkchina-mask-speaks",
+        "title": "转头与披风挥动之间完成换脸",
+        "category": "online-source",
+        "tags": ["ThinkChina", "转头", "披风", "动作掩护", "变脸", "表演"],
+        "source": "ThinkChina (联合早报)",
+        "sourceUrl": "https://www.thinkchina.sg/culture/mask-speaks-unmasking-spirit-sichuan-opera-eye-sichuan-series",
+        "text": (
+            "ThinkChina 的川剧专题描述了“一个转头、一次披风挥动就能换脸”的舞台瞬间，"
+            "并探讨面具与角色精神表达之间的关系。这为项目中转头触发变脸、动作掩护切换的文化解释提供了参照。"
+        ),
+    },
+    {
+        "id": "online-arxiv-graphrag",
+        "title": "GraphRAG：从局部检索到全局语料理解",
+        "category": "technical-source",
+        "tags": ["GraphRAG", "知识图谱", "Microsoft", "社区检测", "检索增强"],
+        "source": "Microsoft Research / arXiv 2404.16130",
+        "sourceUrl": "https://arxiv.org/abs/2404.16130",
+        "text": (
+            "Microsoft Research 的 GraphRAG 论文指出，向量 RAG 只能检索局部相关片段，难以回答全局性问题，"
+            "因此提出用知识图谱加社区摘要增强检索。本项目采用同类思想的轻量实现："
+            "把角色、颜色、寓意、剧目组织成图，问答时沿关系取一跳子图作为上下文，而不是只拼接平面文档。"
+        ),
+    },
+    {
+        "id": "online-graphrag-official-docs",
+        "title": "GraphRAG 官方实现与管线结构",
+        "category": "technical-source",
+        "tags": ["GraphRAG", "Microsoft", "官方实现", "pipeline", "知识图谱"],
+        "source": "Microsoft GraphRAG 官方文档",
+        "sourceUrl": "https://microsoft.github.io/graphrag/",
+        "text": (
+            "GraphRAG 官方文档描述了从文本抽取实体关系、构建图谱、划分社区并生成摘要的完整管线。"
+            "本项目的文化知识图谱是确定性的轻量版本：由结构化脸谱数据直接建图，检索与遍历完全离线可复现。"
+        ),
+    },
+    {
+        "id": "online-arxiv-3dgs",
+        "title": "3D Gaussian Splatting：实时辐射场渲染",
+        "category": "technical-source",
+        "tags": ["3DGS", "Gaussian Splatting", "radiance field", "实时渲染", "SIGGRAPH 2023"],
+        "source": "Kerbl et al., SIGGRAPH 2023 / arXiv 2308.04079",
+        "sourceUrl": "https://arxiv.org/abs/2308.04079",
+        "text": (
+            "3D Gaussian Splatting 用数百万各向异性 3D 高斯基元表示场景，配合可见性感知的 splatting 光栅化"
+            "实现实时高质量渲染。项目陈列馆使用其生态中的 .ksplat 格式渲染实景背景（雷峰塔、华清池），"
+            "让三维脸谱模型置于真实文化场景中。"
+        ),
+    },
+    {
+        "id": "online-inria-3dgs-project",
+        "title": "3DGS 官方项目页与参考实现",
+        "category": "technical-source",
+        "tags": ["3DGS", "INRIA", "参考实现", "数据集", "渲染"],
+        "source": "INRIA FunGraph 项目页",
+        "sourceUrl": "https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/",
+        "text": (
+            "3D Gaussian Splatting 的官方项目页提供参考实现、数据集与演示，是 3DGS 生态的源头。"
+            "项目通过 @mkkellogg/gaussian-splats-3d（Three.js 生态）加载该格式的资产，属于对开源 3DGS 生态的应用集成。"
+        ),
+    },
+    {
+        "id": "online-google-face-landmarker",
+        "title": "Face Landmarker：478 关键点与 52 blendshape",
+        "category": "technical-source",
+        "tags": ["MediaPipe", "Face Landmarker", "478 landmarks", "blendshape", "表情", "Google AI Edge"],
+        "source": "Google AI Edge 官方文档",
+        "sourceUrl": "https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker",
+        "text": (
+            "Google AI Edge 的 Face Landmarker 任务可输出 478 个 3D 人脸关键点与 52 个 facial blendshape 系数，"
+            "用于检测人脸几何与表情。项目的情绪切换脸谱模块正是基于 blendshape 系数的阈值路由，"
+            "属于规则化的情绪到脸谱映射，不宣称心理学意义上的情绪识别。"
+        ),
+    },
 ]
 
 
@@ -680,28 +794,84 @@ def _tokens(text: str) -> list[str]:
     return latin + cjk + words
 
 
+# Cross-language / synonym expansion so bilingual queries hit the same documents.
+QUERY_ALIASES: dict[str, tuple[str, ...]] = {
+    "变脸": ("bian lian", "face changing", "换脸"),
+    "脸谱": ("面具", "facepaint", "mask"),
+    "面具": ("脸谱", "mask"),
+    "川剧": ("sichuan opera", "chuan opera"),
+    "唱段": ("唱腔", "audio", "cantos"),
+    "唱腔": ("唱段", "cantos"),
+    "手势": ("gesture", "hand"),
+    "情绪": ("emotion", "blendshape", "表情"),
+    "表情": ("emotion", "blendshape"),
+    "三维": ("3d", "glb", "面罩"),
+    "面罩": ("mask", "3d", "glb"),
+    "推荐": ("recommend",),
+    "技法": ("technique", "抹脸", "吹脸", "扯脸"),
+    "颜色": ("color", "寓意"),
+    "寓意": ("meaning", "颜色"),
+    "知识库": ("rag", "知识"),
+    "图谱": ("graph", "graphrag"),
+}
+
+
+def _expand_query(query_text: str) -> list[str]:
+    terms = _tokens(query_text)
+    lowered = query_text.lower()
+    for key, aliases in QUERY_ALIASES.items():
+        if key in lowered or any(alias in lowered for alias in aliases):
+            terms.extend([key, *aliases])
+    seen: set[str] = set()
+    expanded: list[str] = []
+    for term in terms:
+        if term and term not in seen:
+            seen.add(term)
+            expanded.append(term)
+    return expanded
+
+
+@lru_cache(maxsize=1)
+def _search_index() -> tuple[tuple[dict[str, Any], str, str, str], ...]:
+    """Pre-lowercase every document field once; documents are immutable after build."""
+    prepared: list[tuple[dict[str, Any], str, str, str]] = []
+    for doc in build_documents():
+        title = str(doc.get("title", "")).lower()
+        tags = " ".join(map(str, doc.get("tags", []))).lower()
+        haystack = f"{title} {tags} {str(doc.get('text', '')).lower()}"
+        prepared.append((doc, title, tags, haystack))
+    return tuple(prepared)
+
+
+def _cjk_bigrams(text: str) -> list[str]:
+    runs = re.findall(r"[\u4e00-\u9fff]{2,}", text.lower())
+    return [run[i : i + 2] for run in runs for i in range(len(run) - 1)]
+
+
 def search_documents(query: str, limit: int = 8, current_face_key: str | None = None) -> list[dict[str, Any]]:
     query_text = (query or "").strip()
-    documents = build_documents()
+    index = _search_index()
     if current_face_key:
         query_text = f"{query_text} {current_face_key}"
     if not query_text:
-        return documents[:limit]
+        return [doc for doc, _, _, _ in index[: max(1, min(limit, 20))]]
 
-    query_terms = _tokens(query_text)
+    query_terms = _expand_query(query_text)
+    phrases = _cjk_bigrams(query_text)
     scored: list[tuple[float, dict[str, Any]]] = []
-    for doc in documents:
-        haystack = f"{doc['title']} {' '.join(map(str, doc.get('tags', [])))} {doc['text']}".lower()
+    for doc, title, tags, haystack in index:
         score = 0.0
         for term in query_terms:
-            if not term:
-                continue
-            if term in str(doc.get("title", "")).lower():
+            if term in title:
                 score += 4.0
-            if term in " ".join(map(str, doc.get("tags", []))).lower():
+            if term in tags:
                 score += 2.5
             if term in haystack:
                 score += 1.0
+        # Phrase evidence: contiguous CJK bigrams indicate a topical match.
+        if phrases:
+            matched_phrases = sum(1 for bigram in phrases if bigram in haystack)
+            score += min(matched_phrases, 8) * 0.5
         if current_face_key and doc.get("faceKey") == current_face_key:
             score += 3.0
         if score > 0:
@@ -719,7 +889,48 @@ def search_documents(query: str, limit: int = 8, current_face_key: str | None = 
             scored.append((score, compact))
 
     scored.sort(key=lambda item: (-item[0], item[1]["id"]))
-    return [doc for _, doc in scored[: max(1, min(limit, 20))]]
+    return _diversify_by_source([doc for _, doc in scored], limit)
+
+
+def _diversify_by_source(documents: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    """Greedy source cap (2 per sourceUrl) so one outlet cannot crowd out others."""
+    cap = max(1, min(limit, 20))
+    per_source: dict[str, int] = {}
+    selected: list[dict[str, Any]] = []
+    deferred: list[dict[str, Any]] = []
+    for doc in documents:
+        source = str(doc.get("sourceUrl") or "")
+        if source and per_source.get(source, 0) >= 2:
+            deferred.append(doc)
+            continue
+        per_source[source] = per_source.get(source, 0) + 1
+        selected.append(doc)
+        if len(selected) >= cap:
+            break
+    for doc in deferred:
+        if len(selected) >= cap:
+            break
+        selected.append(doc)
+    return selected
+
+
+def corpus_stats() -> dict[str, Any]:
+    """Corpus metadata for /api/ai/rag/stats — kept honest and simple."""
+    documents = build_documents()
+    by_category: dict[str, int] = {}
+    sources: set[str] = set()
+    for doc in documents:
+        category = str(doc.get("category") or "unknown")
+        by_category[category] = by_category.get(category, 0) + 1
+        source = str(doc.get("source") or "").strip()
+        if source:
+            sources.add(source)
+    return {
+        "totalDocuments": len(documents),
+        "byCategory": dict(sorted(by_category.items(), key=lambda item: -item[1])),
+        "sourceCount": len(sources),
+        "retrieval": "weighted-lexical-bigram-alias-v2",
+    }
 
 
 # These records are retrieved by the existing RAG index. They are curatorial,

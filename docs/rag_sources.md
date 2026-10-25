@@ -106,3 +106,46 @@
 - 四川省/重庆市地方戏曲研究院资料。
 - 川剧剧目、脸谱谱式、色彩体系的专业论文或教材。
 - 本项目答辩稿、展板文案、视频脚本和老师反馈。
+
+## 2026-10 扩充批次（v0.3）
+
+25. Wikipedia · Bian lian  
+    https://en.wikipedia.org/wiki/Bian_lian  
+    用途：变脸的英文综述条目，提供通用背景与英文关键词检索锚点。
+
+26. Chengdu Sichuan Opera 官方指南  
+    https://chengdusichuanopera.com/guides/bian-lian-face-changing-explained  
+    用途：扯脸（che lian）多层丝质面具技法的官方介绍，支撑"多层脸谱数字化映射"解释。
+
+27. 重庆市文化和旅游研究院  
+    https://www.cqwl.org/web/article/1433541825799856128/web/content_1433541825799856128.html  
+    用途：川剧脸谱定色规律与巴蜀地域特征（红色忠勇、黑色严肃威严等）。
+
+28. ThinkChina（联合早报）  
+    https://www.thinkchina.sg/culture/mask-speaks-unmasking-spirit-sichuan-opera-eye-sichuan-series  
+    用途："一个转头、一次披风挥动就能换脸"的舞台动作掩护描述。
+
+29. Microsoft Research · GraphRAG paper  
+    https://arxiv.org/abs/2404.16130  
+    用途：GraphRAG 方法论依据（知识图谱 + 社区摘要增强检索）。
+
+30. Microsoft GraphRAG 官方文档  
+    https://microsoft.github.io/graphrag/  
+    用途：GraphRAG 管线结构参照；本项目为其确定性轻量实现。
+
+31. 3D Gaussian Splatting paper（SIGGRAPH 2023）  
+    https://arxiv.org/abs/2308.04079  
+    用途：3DGS 陈列馆背景（.ksplat）的方法论出处。
+
+32. INRIA FunGraph · 3DGS 官方项目页  
+    https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/  
+    用途：3DGS 参考实现与生态源头。
+
+33. Google AI Edge · Face Landmarker 官方指南  
+    https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker  
+    用途：478 关键点 + 52 blendshape 输出说明，情绪切换脸谱模块的实现依据。
+
+## 检索版本说明
+
+- v1：加权字段词法检索（标题 4.0 / 标签 2.5 / 正文 1.0 / 当前脸谱上下文 3.0）。
+- v2（当前）：在 v1 基础上增加中英同义扩展、CJK 连续二元短语加分、单一来源最多 2 条的结果多样性约束，以及语料统计接口（/api/ai/rag/stats）。

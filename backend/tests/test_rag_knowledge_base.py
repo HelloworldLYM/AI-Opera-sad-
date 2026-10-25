@@ -2,6 +2,7 @@
 
 from backend.services.rag_knowledge_base import (
     build_documents,
+    corpus_stats,
     resolve_emotion_face_mapping,
     search_documents,
 )
@@ -65,3 +66,27 @@ def test_emotion_face_mapping_shape():
     mapping = resolve_emotion_face_mapping("happy")
     assert isinstance(mapping, dict)
     assert "faceKey" in mapping or "face" in mapping or mapping == {}
+
+
+def test_bilingual_query_expansion_hits_chinese_docs():
+    results = search_documents("face changing technique", limit=5)
+    assert results, "english alias query must retrieve documents"
+    assert any("变脸" in doc["title"] or "变脸" in " ".join(doc.get("tags", [])) for doc in results)
+
+
+def test_source_diversity_caps_single_outlet():
+    results = search_documents("变脸 历史 技法 文化 川剧 非遗 数字化", limit=12)
+    assert len(results) >= 6
+    per_url: dict[str, int] = {}
+    for doc in results:
+        url = str(doc.get("sourceUrl") or "")
+        per_url[url] = per_url.get(url, 0) + 1
+    assert max(per_url.values()) <= 2, "one source must not crowd out the result page"
+
+
+def test_corpus_stats_shape():
+    stats = corpus_stats()
+    assert stats["totalDocuments"] > 40, "corpus should keep growing, not shrink"
+    assert stats["sourceCount"] >= 10, "at least ten distinct cited sources"
+    assert "online-source" in stats["byCategory"]
+    assert stats["retrieval"].startswith("weighted-lexical")

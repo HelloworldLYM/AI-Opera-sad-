@@ -56,7 +56,11 @@ from backend.services.print_service import (
     list_demo_printers,
     preflight_obj,
 )
-from backend.services.rag_knowledge_base import resolve_emotion_face_mapping, search_documents
+from backend.services.rag_knowledge_base import (
+    corpus_stats,
+    resolve_emotion_face_mapping,
+    search_documents,
+)
 from backend.services.segmentation_service import sam_config, segment_occlusion
 from backend.services.uv_service import generate_uv_for_texture
 from backend.services.vision_quality_service import visual_quality_report, vlm_config
@@ -115,6 +119,7 @@ class AiAgentRequest(BaseModel):
     message: str = ""
     currentFaceKey: str | None = None
     uiContext: dict[str, Any] | None = None
+    history: list[dict[str, Any]] | None = None
 
 
 class AiEmotionFaceMapRequest(BaseModel):
@@ -209,7 +214,23 @@ class PrintJobRequest(PrintPreflightRequest):
     color: str = "opera-red"
 
 
-app = FastAPI(title="Personalized Facepaint Mask Backend", version="0.2.0")
+app = FastAPI(
+    title="AI-Opera Backend",
+    version="0.3.0",
+    description=(
+        "Backend for the AI-Opera Sichuan-opera face-changing experience: "
+        "RAG knowledge base with cited sources, GraphRAG cultural knowledge graph, "
+        "tool-calling guide agent, contextual-bandit recommendations, and the "
+        "personalized 3D mask generation pipeline."
+    ),
+    openapi_tags=[
+        {"name": "agent", "description": "Guide agent: tool-orchestrated RAG answers"},
+        {"name": "rag", "description": "Cited RAG retrieval and corpus stats"},
+        {"name": "culture", "description": "Face catalogue, cultural graph and opera media"},
+        {"name": "generation", "description": "3D mask reconstruction and 3DGS gallery jobs"},
+        {"name": "devices", "description": "3D printing preflight and job management"},
+    ],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -217,6 +238,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api", tags=["agent"])
+def api_index() -> dict[str, Any]:
+    """Machine-readable index of the main endpoint groups."""
+    return {
+        "service": app.title,
+        "version": app.version,
+        "docs": "/docs",
+        "groups": {
+            "agent": ["/api/ai/agent", "/api/ai/ask", "/api/ai/narration", "/api/ai/report"],
+            "rag": ["/api/ai/rag/search", "/api/ai/rag/stats"],
+            "graph": ["/api/ai/graph", "/api/culture/graph"],
+            "recommendation": ["/api/ai/recommend"],
+            "vision": ["/api/ai/visual-qa", "/api/ai/clip/search", "/api/ai/sam/segment"],
+            "generation": ["/api/hq-mask/jobs", "/api/personal-face/jobs", "/api/3dgs/scenes"],
+            "media": ["/api/opera/media"],
+            "devices": ["/api/3d-print/capability", "/api/3d-print/jobs"],
+            "health": ["/api/hq-mask/health"],
+        },
+    }
 
 
 def _model_dump(model: BaseModel) -> dict[str, Any]:
@@ -738,6 +780,11 @@ def search_ai_rag(q: str = "", currentFaceKey: str | None = None, limit: int = 8
     }
 
 
+@app.get("/api/ai/rag/stats")
+def get_ai_rag_stats() -> dict[str, Any]:
+    return corpus_stats()
+
+
 @app.post("/api/ai/emotion-face-map")
 def map_emotion_to_face(payload: AiEmotionFaceMapRequest) -> dict[str, Any]:
     try:
@@ -793,6 +840,7 @@ def run_ai_guide_agent(payload: AiAgentRequest) -> dict[str, Any]:
         reconstruction_profile=get_reconstruction_profile(
             os.environ.get("HQ_MASK_RECONSTRUCTION_PROFILE", DEFAULT_PROFILE)
         ),
+        history=payload.history,
     )
 
 

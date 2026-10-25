@@ -61,3 +61,38 @@ def test_culture_graph_endpoint():
     assert response.status_code == 200
     graph = response.json()
     assert graph.get("nodes") and graph.get("edges")
+
+
+def test_api_index_lists_endpoint_groups():
+    response = client.get("/api")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["version"]
+    assert {"agent", "rag", "generation"} <= set(body["groups"])
+    assert "/api/ai/agent" in body["groups"]["agent"]
+
+
+def test_rag_stats_endpoint():
+    response = client.get("/api/ai/rag/stats")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["totalDocuments"] > 40
+    assert body["sourceCount"] >= 10
+
+
+def test_agent_endpoint_accepts_history(monkeypatch):
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    response = client.post(
+        "/api/ai/agent",
+        json={
+            "message": "接着上面继续",
+            "currentFaceKey": "zhangfei",
+            "history": [
+                {"role": "user", "content": "张飞的脸谱是什么颜色"},
+                {"role": "assistant", "content": "张飞脸谱以黑色为主。"},
+            ],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["toolContext"]["historyTurns"] == 2

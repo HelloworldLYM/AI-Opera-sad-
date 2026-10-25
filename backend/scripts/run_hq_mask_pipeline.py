@@ -11,7 +11,6 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 WORK_DIR = Path.cwd().resolve()
 DEFAULT_TEMPLATE = Path("public/legacy/uv_templates/face_uv_template.png")

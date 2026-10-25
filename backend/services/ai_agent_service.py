@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from typing import Any
@@ -16,6 +17,8 @@ from backend.services.rag_knowledge_base import search_documents
 
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"
+MAX_HISTORY_TURNS = 8
+MAX_CITATIONS = 4
 
 COLOR_KNOWLEDGE: dict[str, str] = {
     "红": "红色常用于表现忠义、英勇、正直，也适合关羽、姜维等忠勇人物。",
@@ -120,6 +123,97 @@ def recommend_face(
     }
 
 
+def _tool_rag_search(ctx: dict[str, Any]) -> Any:
+    return search_documents(ctx["message"], limit=6, current_face_key=ctx["current_face_key"])
+
+
+def _tool_graphrag_subgraph(ctx: dict[str, Any]) -> Any:
+    return explain_graph_context(ctx["message"], current_face_key=ctx["current_face_key"])
+
+
+def _tool_bandit_recommend(ctx: dict[str, Any]) -> Any:
+    ui = ctx["ui_context"]
+    return recommend_face(
+        current_face_key=ctx["current_face_key"],
+        viewed_face_keys=ui.get("viewedFaceKeys") or ui.get("viewedFaces") or [],
+        preference_events=ui.get("preferenceEvents") or [],
+        ui_context=ui,
+    )
+
+
+def _tool_system_health(ctx: dict[str, Any]) -> Any:
+    return ctx["system_health"]
+
+
+def _tool_generation_profile(ctx: dict[str, Any]) -> Any:
+    return ctx["reconstruction_profile"]
+
+
+def _tool_opera_media(ctx: dict[str, Any]) -> Any:
+    try:
+        return get_opera_media(ctx["current_face_key"])
+    except KeyError:
+        return None
+
+
+def _always(ctx: dict[str, Any]) -> bool:
+    return True
+
+
+def _if_system_health(ctx: dict[str, Any]) -> bool:
+    return bool(ctx.get("system_health"))
+
+
+def _if_generation_profile(ctx: dict[str, Any]) -> bool:
+    return bool(ctx.get("reconstruction_profile"))
+
+
+def _if_current_face(ctx: dict[str, Any]) -> bool:
+    return bool(ctx.get("current_face_key"))
+
+
+# Explicit, data-driven tool registry. The agent reads tool results first, then
+# hands them to the LLM; every call is instrumented with status and latency.
+TOOL_REGISTRY: list[dict[str, Any]] = [
+    {
+        "name": "rag.search",
+        "purpose": "检索脸谱文化、项目技术和外部资料摘要",
+        "handler": _tool_rag_search,
+        "enabled": _always,
+    },
+    {
+        "name": "graphrag.subgraph",
+        "purpose": "沿角色-颜色-寓意-剧目关系取一跳子图",
+        "handler": _tool_graphrag_subgraph,
+        "enabled": _always,
+    },
+    {
+        "name": "bandit.recommend_face",
+        "purpose": "根据当前脸谱、观展历史和偏好事件推荐下一张脸谱",
+        "handler": _tool_bandit_recommend,
+        "enabled": _always,
+    },
+    {
+        "name": "system.health",
+        "purpose": "读取后端生成能力、CPU/GPU fallback 与 RAG 状态",
+        "handler": _tool_system_health,
+        "enabled": _if_system_health,
+    },
+    {
+        "name": "generation.profile",
+        "purpose": "读取三维面罩生成路线和 claim level",
+        "handler": _tool_generation_profile,
+        "enabled": _if_generation_profile,
+    },
+    {
+        "name": "opera.media_search",
+        "purpose": "根据当前脸谱匹配剧目唱段，并生成原视频检索入口",
+        "handler": _tool_opera_media,
+        "enabled": _if_current_face,
+    },
+]
+
+
 def _run_agent_tools(
     message: str,
     current_face_key: str | None = None,
@@ -127,59 +221,84 @@ def _run_agent_tools(
     system_health: dict[str, Any] | None = None,
     reconstruction_profile: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    ui = ui_context or {}
-    viewed_face_keys = ui.get("viewedFaceKeys") or ui.get("viewedFaces") or []
-    preference_events = ui.get("preferenceEvents") or []
-    graph = explain_graph_context(message, current_face_key=current_face_key)
-    recommendation = recommend_face(
-        current_face_key=current_face_key,
-        viewed_face_keys=viewed_face_keys,
-        preference_events=preference_events,
-        ui_context=ui,
-    )
-    tools = [
-        {
-            "name": "rag.search",
-            "purpose": "检索脸谱文化、项目技术和外部资料摘要",
-            "result": search_documents(message, limit=6, current_face_key=current_face_key),
-        },
-        {
-            "name": "graphrag.subgraph",
-            "purpose": "沿角色-颜色-寓意-剧目关系取一跳子图",
-            "result": graph,
-        },
-        {
-            "name": "bandit.recommend_face",
-            "purpose": "根据当前脸谱、观展历史和偏好事件推荐下一张脸谱",
-            "result": recommendation,
-        },
-    ]
-    if system_health:
-        tools.append({
-            "name": "system.health",
-            "purpose": "读取后端生成能力、CPU/GPU fallback 与 RAG 状态",
-            "result": system_health,
-        })
-    if reconstruction_profile:
-        tools.append({
-            "name": "generation.profile",
-            "purpose": "读取三维面罩生成路线和 claim level",
-            "result": reconstruction_profile,
-        })
-    if current_face_key:
+    ctx: dict[str, Any] = {
+        "message": message,
+        "current_face_key": current_face_key,
+        "ui_context": ui_context or {},
+        "system_health": system_health,
+        "reconstruction_profile": reconstruction_profile,
+    }
+    tool_calls: list[dict[str, Any]] = []
+    for spec in TOOL_REGISTRY:
+        if not spec["enabled"](ctx):
+            continue
+        started = time.perf_counter()
         try:
-            tools.append({
-                "name": "opera.media_search",
-                "purpose": "根据当前脸谱匹配剧目唱段，并生成原视频检索入口",
-                "result": get_opera_media(current_face_key),
-            })
-        except KeyError:
-            pass
+            result = spec["handler"](ctx)
+            status = "ok" if result is not None else "empty"
+        except Exception as exc:  # a failing tool must never break the answer path
+            result = None
+            status = f"error: {exc}"
+        tool_calls.append(
+            {
+                "name": spec["name"],
+                "purpose": spec["purpose"],
+                "status": status,
+                "latencyMs": round((time.perf_counter() - started) * 1000, 1),
+                "result": result,
+            }
+        )
+
+    graph = next((call["result"] for call in tool_calls if call["name"] == "graphrag.subgraph"), None) or {}
+    recommendation = next(
+        (call["result"] for call in tool_calls if call["name"] == "bandit.recommend_face"), None
+    ) or recommend_face(current_face_key=current_face_key, ui_context=ctx["ui_context"])
     return {
-        "toolCalls": tools,
+        "toolCalls": tool_calls,
         "graph": graph,
         "recommendation": recommendation,
     }
+
+
+def _normalize_history(history: Any) -> list[dict[str, str]]:
+    """Keep the last few clean turns; ignore malformed or oversized entries."""
+    if not isinstance(history, list):
+        return []
+    normalized: list[dict[str, str]] = []
+    for item in history[-MAX_HISTORY_TURNS:]:
+        role = str(item.get("role") or "").lower() if isinstance(item, dict) else ""
+        content = str(item.get("content") or "").strip() if isinstance(item, dict) else ""
+        if role in {"user", "assistant"} and content:
+            normalized.append({"role": role, "content": content[:600]})
+    return normalized
+
+
+def _collect_citations(rag: dict[str, Any]) -> list[dict[str, str | None]]:
+    citations: list[dict[str, str | None]] = []
+    seen: set[str] = set()
+    for doc in rag.get("documents", []):
+        url = str(doc.get("sourceUrl") or "").strip()
+        source = str(doc.get("source") or "").strip()
+        if not url or not source or url in seen:
+            continue
+        seen.add(url)
+        citations.append({"title": str(doc.get("title") or ""), "source": source, "sourceUrl": url})
+        if len(citations) >= MAX_CITATIONS:
+            break
+    return citations
+
+
+def _answer_with_citations(
+    answer: str, rag: dict[str, Any]
+) -> tuple[str, list[dict[str, str | None]]]:
+    """Append a plain-text source block so every answer is traceable."""
+    citations = _collect_citations(rag)
+    if not citations:
+        return answer, citations
+    lines = [answer.rstrip(), "", "来源："]
+    for index, citation in enumerate(citations, start=1):
+        lines.append(f"{index}. {citation['source']}：{citation['sourceUrl']}")
+    return "\n".join(lines), citations
 
 
 def _local_rag_answer(query: str, current_face_key: str | None = None) -> dict[str, Any]:
@@ -210,12 +329,14 @@ def _local_rag_answer(query: str, current_face_key: str | None = None) -> dict[s
             top_doc = (rag.get("documents") or [{}])[0]
             answer = top_doc.get("text") or "暂未匹配到对应脸谱资料。"
 
+    answer, citations = _answer_with_citations(_sanitize_xiaopu_text(answer), rag)
     return {
-        "answer": _sanitize_xiaopu_text(answer),
+        "answer": answer,
         "provider": "local-rag",
         "model": None,
         "rag": rag,
         "usedDeepSeek": False,
+        "citations": citations,
     }
 
 
@@ -299,8 +420,10 @@ def run_agent(
     ui_context: dict[str, Any] | None = None,
     system_health: dict[str, Any] | None = None,
     reconstruction_profile: dict[str, Any] | None = None,
+    history: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     rag = retrieve_rag_context(message, current_face_key=current_face_key)
+    history_turns = _normalize_history(history)
     tool_results = _run_agent_tools(
         message=message,
         current_face_key=current_face_key,
@@ -316,6 +439,7 @@ def run_agent(
         "reconstructionProfile": reconstruction_profile or {},
         "recommendation": recommendation,
         "graphSummary": tool_results["graph"].get("summary"),
+        "historyTurns": len(history_turns),
     }
 
     if not deepseek_config()["configured"]:
@@ -336,25 +460,31 @@ def run_agent(
         "你必须使用 tool calls 中给出的工具结果，但不要声称自己真的启动了摄像头或完成了生成任务。"
         "不要使用“高保真人脸重建”作为既有能力表述。"
         "不要使用 Markdown 格式，回答中绝对不要出现 # 或 * 两个字符。"
+        "回答末尾不要自行编造来源；系统会统一附加来源引用。"
     )
-    user = (
-        f"用户消息：{message}\n\n"
-        f"RAG context：{json.dumps(rag, ensure_ascii=False)}\n\n"
-        f"Tool calls：{json.dumps(tool_results['toolCalls'], ensure_ascii=False)}\n\n"
-        f"Tool context：{json.dumps(tool_context, ensure_ascii=False)}"
+    messages: list[dict[str, str]] = [{"role": "system", "content": system}, *history_turns]
+    messages.append(
+        {
+            "role": "user",
+            "content": (
+                f"用户消息：{message}\n\n"
+                f"RAG context：{json.dumps(rag, ensure_ascii=False)}\n\n"
+                f"Tool calls：{json.dumps(tool_results['toolCalls'], ensure_ascii=False)}\n\n"
+                f"Tool context：{json.dumps(tool_context, ensure_ascii=False)}"
+            ),
+        }
     )
     try:
-        result = _call_deepseek([
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ], temperature=0.28, max_tokens=1100)
+        result = _call_deepseek(messages, temperature=0.28, max_tokens=1100)
+        answer, citations = _answer_with_citations(_sanitize_xiaopu_text(result["content"]), rag)
         return {
-            "answer": _sanitize_xiaopu_text(result["content"]),
+            "answer": answer,
             "provider": "deepseek",
             "model": deepseek_config()["model"],
             "usedDeepSeek": True,
             "agentMode": "deepseek-rag-tool-agent",
             "rag": rag,
+            "citations": citations,
             "toolContext": tool_context,
             "toolCalls": tool_results["toolCalls"],
             "suggestedActions": _suggest_actions(message, recommendation),
