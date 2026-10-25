@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "leifengta",
+  "scene": "leifengta.ksplat",
+  "poster": "leifengta.poster.jpeg",
+  "format": "ksplat",
+  "rendererPackage": "@mkkellogg/gaussian-splats-3d",
+  "generator": "Apple ml-sharp",
+  "sourceVertexCount": 1179648,
+  "splatCount": 1179534,
+  "imageSize": [
+    448,
+    299
+  ],
+  "camera": {
+    "extrinsic": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "intrinsic": [
+      373.46157837,
+      0,
+      224,
+      0,
+      373.46157837,
+      149.5,
+      0,
+      0,
+      1
+    ],
+    "frame": [
+      1,
+      1179648
+    ],
+    "disparity": [
+      0.00574325,
+      0.03212467
+    ],
+    "colorSpace": 0,
+    "sharpPlyVersion": [
+      1,
+      5,
+      0
+    ]
+  },
+  "interaction": {
+    "mode": "pointer-parallax",
+    "maxDisparity": 0.04,
+    "maxZoom": 0.06,
+    "damping": 0.08,
+    "clampPointer": true,
+    "officialPreviewMaxDisparity": 0.08,
+    "officialPreviewMaxZoom": 0.15
+  },
+  "fallback": {
+    "type": "image",
+    "asset": "leifengta.poster.jpeg"
+  },
+  "notes": [
+    "Keep pointer movement small to avoid exposing unseen regions.",
+    "Use the original PLY for archival; deploy KSPLAT plus poster and this manifest."
+  ],
+  "previewVideo": "leifengta.preview.mp4"
+}

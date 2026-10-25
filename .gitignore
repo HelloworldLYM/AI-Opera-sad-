@@ -32,11 +32,13 @@ tmp/
 .codex-*.log
 .codex-capcut-share-*.json
 
-# Local backups and generated video experiments
+# Local backups, generated video experiments and standalone sub-projects
 backups/
 competition-video/
 ai-opera-hyperframes/out/
-remotion-tech-route/out/
+remotion-tech-route/
+AI-Opera/
+.playwright-cli/
 
 # External heavy model dependency. Restore it separately from 3DDFA-V3 upstream
 # and download weights locally; GitHub normal repositories reject >100 MB files.

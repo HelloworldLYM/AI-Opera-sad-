@@ -596,6 +596,423 @@
       border-color: rgba(127, 229, 255, 0.42);
     }
 
+    .print-workbench {
+      margin-top: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 230, 173, 0.2);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(217, 45, 32, 0.12), transparent 28%),
+        rgba(7, 12, 20, 0.94);
+      box-shadow: 0 34px 100px rgba(0, 0, 0, 0.36);
+    }
+
+    .print-workbench-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 24px 26px 20px;
+      border-bottom: 1px solid rgba(127, 229, 255, 0.12);
+    }
+
+    .print-workbench-copy {
+      max-width: 72ch;
+    }
+
+    .print-kicker {
+      color: var(--cyan);
+      font-family: var(--font-data);
+      font-size: 0.78rem;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .print-workbench h2 {
+      margin-top: 8px;
+      color: #fff1cb;
+      font-family: var(--font-title);
+      font-size: 1.9rem;
+      letter-spacing: 0.1em;
+    }
+
+    .print-workbench-copy p {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.72;
+    }
+
+    .demo-mode-badge {
+      flex: 0 0 auto;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 230, 173, 0.25);
+      border-radius: 999px;
+      background: rgba(255, 230, 173, 0.07);
+      color: var(--gold);
+      font-family: var(--font-data);
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+
+    .demo-mode-badge::before,
+    .printer-state::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(127, 229, 255, 0.72);
+    }
+
+    .print-workbench-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.94fr) minmax(420px, 1.06fr);
+      min-height: 450px;
+    }
+
+    .print-config,
+    .print-console {
+      padding: 24px 26px 26px;
+    }
+
+    .print-config {
+      border-right: 1px solid rgba(127, 229, 255, 0.12);
+    }
+
+    .print-section-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .print-section-title h3 {
+      color: var(--gold);
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+    }
+
+    .print-section-title span {
+      color: rgba(246, 243, 232, 0.48);
+      font-family: var(--font-data);
+      font-size: 0.72rem;
+    }
+
+    .print-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .print-field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .print-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .print-field label,
+    .range-label {
+      color: rgba(246, 243, 232, 0.68);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .print-field select {
+      width: 100%;
+      min-height: 46px;
+      padding: 0 38px 0 13px;
+      border: 1px solid rgba(127, 229, 255, 0.16);
+      border-radius: 12px;
+      background: #0b1420;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .print-field select:focus-visible,
+    .print-range:focus-visible {
+      outline: 2px solid rgba(127, 229, 255, 0.72);
+      outline-offset: 3px;
+    }
+
+    .range-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .range-value {
+      color: var(--cyan);
+      font-family: var(--font-data);
+      font-size: 0.84rem;
+    }
+
+    .print-range {
+      width: 100%;
+      height: 5px;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .print-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .print-action {
+      min-height: 46px;
+      flex: 1 1 170px;
+      padding: 11px 15px;
+      border: 1px solid rgba(127, 229, 255, 0.2);
+      border-radius: 13px;
+      background: rgba(127, 229, 255, 0.06);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      transition: transform 180ms ease-out, border-color 180ms ease-out, background-color 180ms ease-out;
+    }
+
+    .print-action:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: rgba(127, 229, 255, 0.42);
+      background: rgba(127, 229, 255, 0.1);
+    }
+
+    .print-action.primary {
+      border-color: rgba(255, 230, 173, 0.48);
+      background: var(--gold-deep);
+      color: #160d04;
+    }
+
+    .print-action:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .print-form-hint {
+      margin-top: 13px;
+      color: rgba(246, 243, 232, 0.48);
+      font-size: 0.78rem;
+      line-height: 1.55;
+    }
+
+    .printer-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(127, 229, 255, 0.1);
+    }
+
+    .printer-name {
+      display: grid;
+      gap: 4px;
+    }
+
+    .printer-name strong {
+      color: #fff1cb;
+      font-size: 1rem;
+    }
+
+    .printer-name span {
+      color: rgba(246, 243, 232, 0.52);
+      font-size: 0.78rem;
+    }
+
+    .printer-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      font-family: var(--font-data);
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+
+    .preflight-list {
+      display: grid;
+      gap: 0;
+      margin-top: 10px;
+    }
+
+    .preflight-item {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(127, 229, 255, 0.08);
+    }
+
+    .preflight-mark {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(127, 229, 255, 0.2);
+      border-radius: 50%;
+      color: rgba(246, 243, 232, 0.48);
+      font-family: var(--font-data);
+      font-size: 0.72rem;
+    }
+
+    .preflight-item.is-pass .preflight-mark {
+      border-color: rgba(127, 229, 255, 0.54);
+      background: rgba(127, 229, 255, 0.1);
+      color: var(--cyan);
+    }
+
+    .preflight-item.is-demo .preflight-mark {
+      border-color: rgba(255, 230, 173, 0.42);
+      background: rgba(255, 230, 173, 0.08);
+      color: var(--gold);
+    }
+
+    .preflight-copy {
+      min-width: 0;
+    }
+
+    .preflight-copy strong {
+      display: block;
+      color: rgba(246, 243, 232, 0.9);
+      font-size: 0.86rem;
+    }
+
+    .preflight-copy span {
+      display: block;
+      margin-top: 3px;
+      color: rgba(246, 243, 232, 0.48);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .preflight-state {
+      color: rgba(246, 243, 232, 0.46);
+      font-family: var(--font-data);
+      font-size: 0.7rem;
+    }
+
+    .print-estimate {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(127, 229, 255, 0.1);
+      border-radius: 14px;
+      background: rgba(127, 229, 255, 0.1);
+    }
+
+    .estimate-item {
+      min-height: 76px;
+      display: grid;
+      align-content: center;
+      gap: 5px;
+      padding: 12px;
+      background: #0a121d;
+    }
+
+    .estimate-item span {
+      color: rgba(246, 243, 232, 0.48);
+      font-size: 0.7rem;
+    }
+
+    .estimate-item strong {
+      color: var(--gold);
+      font-family: var(--font-data);
+      font-size: 0.92rem;
+    }
+
+    .print-progress {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(127, 229, 255, 0.1);
+    }
+
+    .progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .progress-head strong {
+      color: #fff1cb;
+      font-size: 0.9rem;
+    }
+
+    .progress-head span {
+      color: var(--cyan);
+      font-family: var(--font-data);
+      font-size: 0.8rem;
+    }
+
+    .progress-track {
+      height: 8px;
+      margin-top: 11px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(127, 229, 255, 0.09);
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--cyan);
+      box-shadow: 0 0 18px rgba(127, 229, 255, 0.38);
+      transition: width 320ms ease-out;
+    }
+
+    .print-stages {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .print-stage {
+      padding-top: 8px;
+      border-top: 2px solid rgba(246, 243, 232, 0.1);
+      color: rgba(246, 243, 232, 0.38);
+      font-size: 0.7rem;
+      text-align: center;
+    }
+
+    .print-stage.is-active,
+    .print-stage.is-done {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .print-stage.is-done {
+      opacity: 0.72;
+    }
+
+    .print-live {
+      min-height: 38px;
+      margin-top: 13px;
+      color: rgba(246, 243, 232, 0.58);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
     @media (max-width: 980px) {
       html {
         font-size: 16.5px;
@@ -616,6 +1033,15 @@
 
       .viewer-layout {
         display: grid;
+      }
+
+      .print-workbench-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .print-config {
+        border-right: 0;
+        border-bottom: 1px solid rgba(127, 229, 255, 0.12);
       }
 
       .viewer-stage {
@@ -664,6 +1090,29 @@
       .experienced-list {
         max-height: none;
       }
+
+      .print-workbench {
+        border-radius: 18px;
+      }
+
+      .print-workbench-head {
+        flex-direction: column;
+        padding: 20px;
+      }
+
+      .print-config,
+      .print-console {
+        padding: 20px;
+      }
+
+      .print-fields,
+      .print-estimate {
+        grid-template-columns: 1fr;
+      }
+
+      .print-stages {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
   </style>
   <link rel="stylesheet" href="/legacy/taste_refinement.css" />
@@ -676,8 +1125,14 @@
         <h1>个人专属三维脸谱模型</h1>
         <p>基于 3DDFA-V3 重建的个人脸型 OBJ，叠加当前脸谱 UV 贴图，用舞台聚光呈现最终可旋转模型。</p>
       </div>
-      <nav class="topbar-actions" aria-label="页面导航">
-        <button class="nav-button primary" id="galleryBtn" type="button">返回舞台</button>
+      <nav class="topbar-actions" aria-label="模型操作与页面导航">
+        <a
+          class="nav-button primary"
+          href="/generated_masks/autodl_user_001/personal_face.obj"
+          download="AI-Opera-personal-face.obj"
+          aria-label="下载当前演示用三维人脸 OBJ 模型"
+        >下载模型</a>
+        <button class="nav-button" id="galleryBtn" type="button">返回舞台</button>
       </nav>
     </header>
 
@@ -740,6 +1195,125 @@
           <button class="tool-button" id="resetBtn" type="button">重置视角</button>
         </div>
       </aside>
+    </section>
+
+    <section class="print-workbench" aria-labelledby="printWorkbenchTitle">
+      <header class="print-workbench-head">
+        <div class="print-workbench-copy">
+          <span class="print-kicker">OBJ TO PHYSICAL · DEMO WORKFLOW</span>
+          <h2 id="printWorkbenchTitle">3D 打印工坊</h2>
+          <p>使用当前项目唯一的个人三维人脸 OBJ，完成参数配置、模型预检和打印任务演示。后续接入切片器与真实设备时，可沿用同一套操作流程。</p>
+        </div>
+        <span class="demo-mode-badge" title="当前不会向真实打印机发送控制指令">演示模式 · 未连接真实设备</span>
+      </header>
+
+      <div class="print-workbench-grid">
+        <form class="print-config" id="printForm">
+          <div class="print-section-title">
+            <h3>打印参数</h3>
+            <span>PROFILE / 01</span>
+          </div>
+
+          <div class="print-fields">
+            <div class="print-field full">
+              <label for="printerSelect">目标设备</label>
+              <select id="printerSelect" name="printerId">
+                <option value="ai-opera-demo-fdm-01">AI-Opera 展示打印机（模拟连接）</option>
+              </select>
+            </div>
+
+            <div class="print-field">
+              <label for="materialSelect">打印材料</label>
+              <select id="materialSelect" name="material">
+                <option value="pla">PLA 哑光</option>
+                <option value="petg">PETG 耐久</option>
+              </select>
+            </div>
+
+            <div class="print-field">
+              <label for="qualitySelect">打印精度</label>
+              <select id="qualitySelect" name="quality">
+                <option value="draft">快速打样 · 0.28 mm</option>
+                <option value="standard" selected>标准展示 · 0.20 mm</option>
+                <option value="detail">精细纹样 · 0.12 mm</option>
+              </select>
+            </div>
+
+            <div class="print-field">
+              <label for="colorSelect">成品颜色</label>
+              <select id="colorSelect" name="color">
+                <option value="opera-red">脸谱红</option>
+                <option value="warm-white">暖白</option>
+                <option value="ink-black">墨黑</option>
+              </select>
+            </div>
+
+            <div class="print-field">
+              <label for="supportSelect">支撑方案</label>
+              <select id="supportSelect" name="support">
+                <option value="auto">自动支撑</option>
+                <option value="light">轻量支撑</option>
+                <option value="none">不生成支撑</option>
+              </select>
+            </div>
+
+            <div class="print-field full">
+              <div class="range-head">
+                <label class="range-label" for="heightRange">成品高度</label>
+                <output class="range-value" id="heightValue" for="heightRange">120 mm</output>
+              </div>
+              <input class="print-range" id="heightRange" name="targetHeightMm" type="range" min="80" max="180" step="5" value="120" />
+            </div>
+          </div>
+
+          <div class="print-actions">
+            <button class="print-action" id="preflightBtn" type="button">重新预检</button>
+            <button class="print-action primary" id="startPrintBtn" type="submit" disabled>开始打印演示</button>
+          </div>
+          <p class="print-form-hint">当前仅演示流程和状态反馈。真实打印仍需模型修复、切片生成、设备授权及安全确认。</p>
+        </form>
+
+        <section class="print-console" aria-labelledby="printConsoleTitle">
+          <div class="printer-line">
+            <div class="printer-name">
+              <strong id="printConsoleTitle">AI-Opera 展示打印机</strong>
+              <span>220 × 220 × 250 mm · FDM 文创打印工作站</span>
+            </div>
+            <span class="printer-state" id="printerState">演示连接正常</span>
+          </div>
+
+          <div class="preflight-list" id="preflightList" aria-label="模型预检结果">
+            <div class="preflight-item">
+              <span class="preflight-mark">1</span>
+              <span class="preflight-copy"><strong>等待模型预检</strong><span>模型加载完成后自动检查 OBJ 资产</span></span>
+              <span class="preflight-state">WAIT</span>
+            </div>
+          </div>
+
+          <div class="print-estimate" aria-label="打印估算">
+            <div class="estimate-item"><span>预计时间</span><strong id="estimateTime">等待预检</strong></div>
+            <div class="estimate-item"><span>预计耗材</span><strong id="estimateMaterial">等待预检</strong></div>
+            <div class="estimate-item"><span>切片层数</span><strong id="estimateLayers">等待预检</strong></div>
+          </div>
+
+          <div class="print-progress">
+            <div class="progress-head">
+              <strong id="printStageLabel">任务尚未提交</strong>
+              <span id="printProgressLabel">0%</span>
+            </div>
+            <div class="progress-track" id="printProgressTrack" role="progressbar" aria-label="3D 打印演示进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="progress-fill" id="printProgressFill"></div>
+            </div>
+            <div class="print-stages" id="printStages" aria-hidden="true">
+              <span class="print-stage" data-print-stage="slicing">模拟切片</span>
+              <span class="print-stage" data-print-stage="heating">设备预热</span>
+              <span class="print-stage" data-print-stage="printing">逐层打印</span>
+              <span class="print-stage" data-print-stage="completed">演示完成</span>
+            </div>
+            <p class="print-live" id="printLive" aria-live="polite">正在等待模型预检。</p>
+          </div>
+        </section>
+      </div>
     </section>
   </main>
 

@@ -48,7 +48,15 @@ from backend.services.multiview_quality_service import (
     selected_image_paths_from_manifest,
 )
 from backend.services.opera_media_service import get_opera_media, list_opera_media
-from backend.services.rag_knowledge_base import search_documents
+from backend.services.print_service import (
+    cancel_demo_print_job,
+    create_demo_print_job,
+    get_demo_print_job,
+    get_print_capability,
+    list_demo_printers,
+    preflight_obj,
+)
+from backend.services.rag_knowledge_base import resolve_emotion_face_mapping, search_documents
 from backend.services.segmentation_service import sam_config, segment_occlusion
 from backend.services.uv_service import generate_uv_for_texture
 from backend.services.vision_quality_service import visual_quality_report, vlm_config
@@ -108,6 +116,12 @@ class AiAgentRequest(BaseModel):
     message: str = ""
     currentFaceKey: str | None = None
     uiContext: dict[str, Any] | None = None
+
+
+class AiEmotionFaceMapRequest(BaseModel):
+    emotion: str = "neutral"
+    confidence: float = 0.0
+    currentFaceKey: str | None = None
 
 
 class AiRecommendRequest(BaseModel):
@@ -182,6 +196,18 @@ class DigitalSceneRequest(BaseModel):
     lyricsUrl: str | None = None
     cantoStartTime: float | int | None = None
     cantoDurationSeconds: float | int | None = None
+
+
+class PrintPreflightRequest(BaseModel):
+    objUrl: str = "/generated_masks/autodl_user_001/personal_face.obj"
+    targetHeightMm: float = 120.0
+    material: str = "pla"
+    quality: str = "standard"
+
+
+class PrintJobRequest(PrintPreflightRequest):
+    printerId: str = "ai-opera-demo-fdm-01"
+    color: str = "opera-red"
 
 
 app = FastAPI(title="Personalized Facepaint Mask Backend", version="0.2.0")
@@ -679,6 +705,7 @@ def get_ai_config() -> dict[str, Any]:
         "agentTools": [
             "culture_search",
             "rag_document_search",
+            "rag_emotion_face_mapping",
             "graphrag_subgraph",
             "contextual_bandit_recommendation",
             "visual_quality_agent",
@@ -709,6 +736,19 @@ def search_ai_rag(q: str = "", currentFaceKey: str | None = None, limit: int = 8
         "currentFaceKey": currentFaceKey,
         "count": len(documents),
         "documents": documents,
+    }
+
+
+@app.post("/api/ai/emotion-face-map")
+def map_emotion_to_face(payload: AiEmotionFaceMapRequest) -> dict[str, Any]:
+    try:
+        result = resolve_emotion_face_mapping(payload.emotion)
+    except KeyError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {
+        **result,
+        "confidence": max(0.0, min(float(payload.confidence), 1.0)),
+        "currentFaceKey": payload.currentFaceKey,
     }
 
 
@@ -835,6 +875,57 @@ def run_ai_sam_segment(payload: AiSamSegmentRequest) -> dict[str, Any]:
         face_landmarks=payload.faceLandmarks,
         hand_landmarks=payload.handLandmarks,
     )
+
+
+@app.get("/api/3d-print/capability")
+def get_3d_print_capability() -> dict[str, Any]:
+    return get_print_capability()
+
+
+@app.get("/api/3d-print/printers")
+def get_3d_print_printers() -> dict[str, Any]:
+    return list_demo_printers()
+
+
+@app.post("/api/3d-print/preflight")
+def run_3d_print_preflight(payload: PrintPreflightRequest) -> dict[str, Any]:
+    try:
+        return preflight_obj(
+            obj_url=payload.objUrl,
+            target_height_mm=payload.targetHeightMm,
+            material=payload.material,
+            quality=payload.quality,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/3d-print/jobs")
+def create_3d_print_job(payload: PrintJobRequest) -> dict[str, Any]:
+    try:
+        return create_demo_print_job(_model_dump(payload))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.get("/api/3d-print/jobs/{job_id}")
+def get_3d_print_job(job_id: str) -> dict[str, Any]:
+    job = get_demo_print_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="3D print job not found")
+    return job
+
+
+@app.post("/api/3d-print/jobs/{job_id}/cancel")
+def cancel_3d_print_job(job_id: str) -> dict[str, Any]:
+    job = cancel_demo_print_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="3D print job not found")
+    return job
 
 
 @app.get("/api/3dgs/status")

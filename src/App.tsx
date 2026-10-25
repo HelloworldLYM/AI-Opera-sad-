@@ -4,7 +4,6 @@ import type { CSSProperties } from 'react'
 type ExperienceMode = 'lite' | 'full'
 
 const heroPosterSrc = '/legacy/main_poster_panel_v2.png'
-const ambientMusicSrc = '/legacy/audio/opera-background.mp3'
 
 const modeMeta: Record<
   ExperienceMode,
@@ -99,34 +98,7 @@ const moduleTiles = [
 function App() {
   const [selectedMode, setSelectedMode] = useState<ExperienceMode>('lite')
   const [portalReady, setPortalReady] = useState(false)
-  const ambientAudioRef = useRef<HTMLAudioElement | null>(null)
   const portalRef = useRef<HTMLElement | null>(null)
-
-  useEffect(() => {
-    const audio = ambientAudioRef.current
-    if (!audio) return
-
-    const playAmbient = () => {
-      audio.volume = 0.32
-      audio.loop = true
-      void audio.play().catch(() => {
-        // Browsers may block sound before the first user gesture.
-      })
-    }
-
-    const unlockMusic = () => {
-      if (audio.paused) playAmbient()
-    }
-
-    playAmbient()
-    document.addEventListener('pointerdown', unlockMusic)
-    document.addEventListener('keydown', unlockMusic)
-
-    return () => {
-      document.removeEventListener('pointerdown', unlockMusic)
-      document.removeEventListener('keydown', unlockMusic)
-    }
-  }, [])
 
   useEffect(() => {
     const target = portalRef.current
@@ -183,8 +155,6 @@ function App() {
   return (
     <div className="app-shell">
       <div className="page-backdrop" />
-      <audio ref={ambientAudioRef} src={ambientMusicSrc} loop preload="auto" />
-
       <main className="page-content">
         <nav className="scene-topbar" aria-label="项目愿景">
           <a className="scene-brand" href="#top" aria-label="返回首页顶部">

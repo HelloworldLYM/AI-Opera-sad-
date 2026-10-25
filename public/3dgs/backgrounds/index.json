@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "recommendedDefault": "huaqingchi",
+  "rendererPackage": "@mkkellogg/gaussian-splats-3d",
+  "scenes": [
+    {
+      "id": "huaqingchi",
+      "scene": "huaqingchi.ksplat",
+      "manifest": "huaqingchi.manifest.json",
+      "poster": "huaqingchi.poster.jpeg",
+      "previewVideo": "huaqingchi.preview.mp4",
+      "rawPly": "../outputs/huaqingchi.ply"
+    },
+    {
+      "id": "leifengta",
+      "scene": "leifengta.ksplat",
+      "manifest": "leifengta.manifest.json",
+      "poster": "leifengta.poster.jpeg",
+      "previewVideo": "leifengta.preview.mp4",
+      "rawPly": "../outputs/leifengta.ply"
+    }
+  ],
+  "integrationNote": "Use KSPLAT for the live pointer-parallax background; use poster or previewVideo as fallback."
+}

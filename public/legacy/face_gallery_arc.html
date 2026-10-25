@@ -723,7 +723,7 @@
         <div class="media-copy">
           <span class="media-kicker" id="operaMeta">剧目唱段</span>
           <h3 class="canto-title" id="cantoTitle">《华容道》经典唱段</h3>
-          <p class="canto-note" id="cantoNote">切换脸谱后，系统会自动匹配并播放对应剧目唱段，同时提供原视频检索入口。</p>
+          <p class="canto-note" id="cantoNote">切换脸谱后，系统会匹配对应剧目唱段；点击“播放唱段”后开始播放，同时提供原视频检索入口。</p>
           <div class="audio-controls">
             <button class="control-button" id="playCantoButton" type="button">播放唱段</button>
             <div class="timeline" aria-hidden="true"><div class="timeline-fill" id="cantoFill"></div></div>
@@ -888,7 +888,7 @@
         `).join('');
       }
 
-      function setAudioSource(media, shouldAutoPlay) {
+      function setAudioSource(media) {
         const source = media.audioUrl
           || (media.audioReady ? media.localAudioUrl : '')
           || media.fallbackAudioUrl
@@ -898,47 +898,40 @@
         cantoAudio.dataset.fallbackUrl = media.fallbackAudioUrl || mediaCatalog.fallbackAudioUrl || '';
         cantoAudio.dataset.mediaTitle = media.cantoTitle || '经典唱段';
         cantoAudio.dataset.sourceKey = sourceKey;
-        if (source && sourceChanged) {
+        if (sourceChanged) {
+          wantsCantoPlayback = false;
+          playCantoButton.textContent = '播放唱段';
           cantoAudio.pause();
           cantoAudio.removeAttribute('src');
           cantoAudio.load();
-          cantoAudio.src = source;
-          cantoFill.style.width = '0%';
-          cantoTime.textContent = '00:00';
-        } else if (source && shouldAutoPlay) {
-          try {
-            cantoAudio.currentTime = 0;
-          } catch {
-            // Some browsers reject seeking before metadata is ready; playback still starts normally.
-          }
+          if (source) cantoAudio.src = source;
           cantoFill.style.width = '0%';
           cantoTime.textContent = '00:00';
         }
-        if (shouldAutoPlay) playCurrentCanto();
       }
 
-      async function resolveMedia(face, shouldAutoPlay = false) {
+      async function resolveMedia(face) {
         const token = ++mediaToken;
         const local = localMediaFor(face);
-        applyMedia(face, local, shouldAutoPlay, token);
+        applyMedia(face, local, token);
         try {
           const response = await fetch(`/api/opera/media/${encodeURIComponent(face.key)}`, { cache: 'no-store' });
           if (!response.ok) return;
           const remote = await response.json();
-          if (token === mediaToken) applyMedia(face, remote, wantsCantoPlayback || shouldAutoPlay, token);
+          if (token === mediaToken) applyMedia(face, remote, token);
         } catch {
           // Static preview mode has no backend; local catalog remains active.
         }
       }
 
-      function applyMedia(face, media, shouldAutoPlay, token = mediaToken) {
+      function applyMedia(face, media, token = mediaToken) {
         if (token !== mediaToken) return;
         operaMeta.textContent = `${face.title} · ${media.opera || '经典剧目'}`;
         cantoTitle.textContent = media.cantoTitle || `《${media.opera || '经典剧目'}》经典唱段`;
-        cantoNote.textContent = `已切换到 ${face.title} 对应的《${media.opera || '经典剧目'}》唱段；继续切换脸谱时，唱段会同步切换并播放。`;
+        cantoNote.textContent = `已匹配 ${face.title} 对应的《${media.opera || '经典剧目'}》唱段；点击“播放唱段”后开始播放。`;
         agentStatus.textContent = media.agentSummary || `Agent 已检索：${media.searchQuery || media.opera || face.title}`;
         renderVideoLinks(media);
-        setAudioSource(media, shouldAutoPlay);
+        setAudioSource(media);
       }
 
       function playCurrentCanto() {
@@ -952,7 +945,7 @@
         });
       }
 
-      function updateDetails(options = {}) {
+      function updateDetails() {
         const active = faces[activeIndex];
         if (!active) return;
         window.__xiaopuGetContext = () => ({
@@ -972,19 +965,19 @@
         detailLink.href = `face_knowledge.html?face=${encodeURIComponent(active.key)}&title=${encodeURIComponent(active.title)}`;
         faceCounter.textContent = `${padIndex(activeIndex + 1)} / ${padIndex(faces.length)}`;
         document.title = `${active.title} · 脸谱收藏馆`;
-        resolveMedia(active, Boolean(options.autoPlay));
+        resolveMedia(active);
       }
 
-      function renderPositions(options = {}) {
+      function renderPositions() {
         const buttons = arcTrack.querySelectorAll('.mask-orbit-item');
         buttons.forEach((button, index) => updateItemPosition(button, index));
-        updateDetails(options);
+        updateDetails();
       }
 
-      function goTo(index, options = { autoPlay: true }) {
+      function goTo(index) {
         const total = faces.length;
         activeIndex = (index + total) % total;
-        renderPositions(options);
+        renderPositions();
       }
 
       function createItems() {
@@ -1003,7 +996,7 @@
           button.addEventListener('click', () => goTo(index));
           arcTrack.appendChild(button);
         });
-        renderPositions({ autoPlay: false });
+        renderPositions();
       }
 
       prevButton.addEventListener('click', () => goTo(activeIndex - 1));
@@ -1051,7 +1044,7 @@
         const fallbackUrl = cantoAudio.dataset.fallbackUrl;
         if (fallbackUrl && cantoAudio.getAttribute('src') !== fallbackUrl) {
           cantoAudio.src = fallbackUrl;
-          cantoNote.textContent = '唱段已随当前脸谱同步切换；继续切换脸谱时会自动更换并播放。';
+          cantoNote.textContent = '备用唱段已准备好；点击“播放唱段”后开始播放。';
           if (wantsCantoPlayback) playCurrentCanto();
         }
       });

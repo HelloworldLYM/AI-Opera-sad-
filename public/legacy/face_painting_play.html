@@ -295,8 +295,8 @@
         <div id="paintStage"></div>
         <div class="status" id="status">
           <div>
-            <h2>个人 OBJ 未就绪</h2>
-            <p>请先回到舞台完成一次 3DDFA-V3 生成，再进入这里绘制。</p>
+            <h2>通用三维模型加载中</h2>
+            <p>正在装配项目通用人脸模型与当前脸谱纹样。</p>
           </div>
         </div>
         <div class="stage-hint" id="stageHint">点击脸谱或右侧按钮，按步骤绘制</div>
@@ -343,6 +343,7 @@
     const texturePreview = document.getElementById('texturePreview');
     const textureSize = 1024;
     const OBJ_CACHE_NAME = 'ai-opera-obj-cache-v1';
+    const DEFAULT_OBJ_URL = '/generated_masks/autodl_user_001/personal_face.obj';
     const textureCanvas = document.createElement('canvas');
     const textureCtx = textureCanvas.getContext('2d', { willReadFrequently: true });
     textureCanvas.width = textureSize;
@@ -422,15 +423,7 @@
     }
 
     function getPersonalObjUrl() {
-      try {
-        const cache = JSON.parse(window.localStorage?.getItem('hqMaskPersonalObjCache:v1') || 'null');
-        if (cache?.objUrl) return cache.objUrl;
-        if (cache?.sessionId) return `/generated_masks/${cache.sessionId}/personal_face.obj`;
-      } catch (error) {
-        // Continue with session fallback.
-      }
-      const sessionId = window.localStorage?.getItem('hqMaskSessionId') || window.sessionStorage?.getItem('hqMaskSessionId');
-      return sessionId ? `/generated_masks/${sessionId}/personal_face.obj` : '';
+      return DEFAULT_OBJ_URL;
     }
 
     function resolveObjAssetUrl(value) {
@@ -798,11 +791,6 @@
       }
 
       const objUrl = getPersonalObjUrl();
-      if (!objUrl) {
-        showStatus('还没有用户个人专属 OBJ', '请先回到舞台，启动摄像头并完成第一次 3DDFA-V3 生成。这里不会使用通用 OBJ 代替。');
-        nextBtn.disabled = true;
-        return;
-      }
 
       try {
         const [objText, image] = await Promise.all([
@@ -817,7 +805,7 @@
         initScene(geometry);
         hideStatus();
       } catch (error) {
-        showStatus('个人 OBJ 读取失败', '没有找到第一次 3DDFA-V3 生成的 personal_face.obj。请先回舞台完成一次真实生成，再进入这里绘制。');
+        showStatus('通用三维模型读取失败', '没有找到项目内置的 personal_face.obj，请检查通用模型文件是否完整。');
         nextBtn.disabled = true;
       }
     }

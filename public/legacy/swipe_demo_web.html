@@ -1478,6 +1478,7 @@
     }
   </style>
   <link rel="stylesheet" href="/legacy/taste_refinement.css" />
+  <link rel="stylesheet" href="/legacy/immersive-background.css?v=20260717" />
 </head>
 <body>
   <!-- SVG 水波纹滤镜 -->
@@ -1537,6 +1538,16 @@
     <div class="video-section">
       <div class="video-container" id="videoContainer">
         <div class="video-inner">
+          <div class="immersive-background-layer" id="immersiveBackgroundLayer" aria-hidden="true">
+            <img id="immersiveFallbackPoster" class="immersive-background-poster" alt="" />
+            <video id="immersiveFallbackVideo" class="immersive-background-video" muted loop playsinline hidden></video>
+            <div id="immersiveSplatHost" class="immersive-splat-host"></div>
+            <div class="immersive-background-shade"></div>
+            <div id="immersiveViewportStatus" class="immersive-viewport-status" role="status" aria-live="polite">
+              <span data-immersive-status-title>沉浸背景</span>
+              <small data-immersive-status-detail>选择场景后开始加载</small>
+            </div>
+          </div>
           <video id="video" playsinline></video>
           <canvas id="canvas"></canvas>
           <canvas id="overlayCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:20;"></canvas>
@@ -1550,9 +1561,137 @@
       <button id="startBtn">启动摄像头</button>
       <button id="stopBtn" disabled>停止</button>
       <button id="resetBtn">重置</button>
+      <button id="immersiveBtn" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7.5 8.7 4l4.1 3.1L16.3 5 20 7.8v8.7L15.4 20l-4.2-3.1L7.8 19 4 16.2Z" />
+          <path d="m8.7 4-.9 15m5-11.9-1.6 9.8M16.3 5l-.9 15" />
+        </svg>
+        <span data-immersive-button-label>身临其境</span>
+      </button>
       <button id="hiFiMaskBtn">三维脸谱</button>
       <button id="galleryBtn">脸谱收藏馆</button>
     </div>
+
+    <section id="immersiveScenePanel" class="immersive-scene-panel" role="dialog" aria-modal="false" aria-hidden="true" aria-labelledby="immersivePanelTitle">
+      <div class="immersive-panel-head">
+        <div>
+          <span class="immersive-panel-eyebrow">沉浸观景</span>
+          <h2 id="immersivePanelTitle">选择你的入戏之境</h2>
+          <p>场景只在选中后加载；移动鼠标即可轻轻改变视角。</p>
+        </div>
+        <button id="immersivePanelClose" class="immersive-panel-close" type="button" aria-label="关闭场景选择">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+
+      <div class="immersive-scene-grid">
+        <button class="immersive-scene-card" type="button" data-immersive-scene="huaqingchi" aria-pressed="false">
+          <img src="/3dgs/backgrounds/huaqingchi.poster.jpeg" alt="" />
+          <span class="immersive-scene-copy">
+            <span class="immersive-scene-location">长安宫苑</span>
+            <strong>华清池</strong>
+            <span>廊檐、水面与山体层次鲜明，沉浸感更强。</span>
+          </span>
+          <span class="immersive-scene-check">已选择</span>
+        </button>
+
+        <button class="immersive-scene-card" type="button" data-immersive-scene="leifengta" aria-pressed="false">
+          <img src="/3dgs/backgrounds/leifengta.poster.jpeg" alt="" />
+          <span class="immersive-scene-copy">
+            <span class="immersive-scene-location">杭州西湖</span>
+            <strong>西湖·雷峰塔</strong>
+            <span>塔影、湖面与林带舒展，视角变化更加柔和。</span>
+          </span>
+          <span class="immersive-scene-check">已选择</span>
+        </button>
+      </div>
+
+      <div class="immersive-panel-foot">
+        <span id="immersivePanelStatus" role="status" aria-live="polite">选择一处景致，进入画中舞台。</span>
+        <button id="immersiveDisableBtn" type="button" disabled>关闭沉浸背景</button>
+      </div>
+    </section>
+  <script>
+  (() => {
+    const button = document.getElementById('immersiveBtn');
+    const buttonLabel = button?.querySelector('[data-immersive-button-label]');
+    const panel = document.getElementById('immersiveScenePanel');
+    const panelClose = document.getElementById('immersivePanelClose');
+    const panelStatus = document.getElementById('immersivePanelStatus');
+    const disableButton = document.getElementById('immersiveDisableBtn');
+    const sceneButtons = Array.from(document.querySelectorAll('[data-immersive-scene]'));
+    if (!button || !buttonLabel || !panel || !sceneButtons.length) return;
+
+    window.__aiOperaImmersiveBootstrap = true;
+    let modulePromise = null;
+
+    function setPanelOpen(open) {
+      panel.classList.toggle('is-visible', open);
+      panel.setAttribute('aria-hidden', String(!open));
+      button.setAttribute('aria-expanded', String(open));
+      if (open) {
+        sceneButtons[0]?.focus({ preventScroll: true });
+        panel.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      } else {
+        button.focus({ preventScroll: true });
+      }
+    }
+
+    async function loadImmersiveModule() {
+      if (window.aiOperaImmersiveBackground) return window.aiOperaImmersiveBackground;
+      if (!modulePromise) {
+        modulePromise = import('/legacy/immersive-background.bundle.js?v=20260718-lazy')
+          .then(() => window.aiOperaImmersiveBackground)
+          .catch((error) => {
+            modulePromise = null;
+            throw error;
+          });
+      }
+      const api = await modulePromise;
+      if (!api) throw new Error('沉浸场景模块尚未就绪');
+      return api;
+    }
+
+    button.addEventListener('click', () => {
+      setPanelOpen(!panel.classList.contains('is-visible'));
+    });
+    panelClose?.addEventListener('click', () => setPanelOpen(false));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && panel.classList.contains('is-visible')) setPanelOpen(false);
+    });
+
+    sceneButtons.forEach((sceneButton) => {
+      sceneButton.addEventListener('click', async () => {
+        const sceneId = sceneButton.dataset.immersiveScene;
+        if (!sceneId) return;
+        const sceneLabel = sceneButton.querySelector('strong')?.textContent?.trim() || '场景';
+        sceneButtons.forEach((item) => item.disabled = true);
+        button.classList.add('is-loading');
+        buttonLabel.textContent = '准备' + sceneLabel;
+        if (panelStatus) panelStatus.textContent = '正在准备三维场景，首次加载请稍候…';
+        try {
+          const api = await loadImmersiveModule();
+          await api.activate(sceneId);
+        } catch (error) {
+          console.error('[immersive-bootstrap] Scene load failed:', error);
+          button.classList.remove('is-loading');
+          buttonLabel.textContent = '身临其境';
+          if (panelStatus) panelStatus.textContent = '场景暂时无法载入，请稍后重试。';
+        } finally {
+          sceneButtons.forEach((item) => item.disabled = false);
+        }
+      });
+    });
+
+    disableButton?.addEventListener('click', async () => {
+      if (window.aiOperaImmersiveBackground) {
+        await window.aiOperaImmersiveBackground.deactivate();
+      } else {
+        setPanelOpen(false);
+      }
+    });
+  })();
+  </script>
 
     <div id="hiFiMaskPanel" class="hifi-mask-panel" aria-live="polite">
       <div class="hifi-mask-header">
@@ -2072,7 +2211,6 @@
   <script src="gesture_sequence_recognizer.js?v=20260529-profile-trigger-fix"></script>
   <script src="gesture_dataset_recorder.js"></script>
   <script src="hand_face_gesture_detector.js?v=20260529-profile-trigger-fix"></script>
-  <script src="auto_emotion_learner.js"></script>
   <script src="/mediapipe/camera_utils/camera_utils.js"></script>
   <script src="/mediapipe/face_mesh/face_mesh.js"></script>
   <script src="/mediapipe/hands/hands.js"></script>
@@ -2095,7 +2233,6 @@
     const logSection = document.getElementById('logSection');
 
     let detector = new HandFaceSwipeDetector()
-    let emotionLearner = new AutoEmotionLearner()
     const gestureDatasetRecorder = window.AIOperaGestureDatasetRecorder
       ? new window.AIOperaGestureDatasetRecorder()
       : null
@@ -2461,26 +2598,6 @@
       let faceLandmarks = null;
       if (faceMeshResults.multiFaceLandmarks && faceMeshResults.multiFaceLandmarks.length > 0) {
         faceLandmarks = faceMeshResults.multiFaceLandmarks[0];
-        
-        // 情绪检测（自动学习器）
-        if (isRunning && faceLandmarks) {
-          const maskFile = emotionLearner.update(faceLandmarks)
-
-          if (maskFile && maskFile !== currentEmotionMaskFile) {
-            const now = performance.now()
-            if ((now - lastEmotionSwitchTime) > EMOTION_SWITCH_COOLDOWN) {
-              lastEmotionSwitchTime = now
-              currentEmotionMaskFile = maskFile
-
-              const stats = emotionLearner.getStats()
-              addLog(`🎭 ${stats.phase === 'pre-learning' ? '📚学习中: ' + stats.currentEmotion : '自动变脸: ' + stats.emotionName}`, 'trigger')
-
-              if (typeof switchFaceMask === 'function') {
-                switchFaceMask(maskFile)
-              }
-            }
-          }
-        }
         
         // 【调试元素-已隐藏】绘制面部网格
         // drawConnectors(ctx, faceLandmarks, FACEMESH_TESSELATION, 
@@ -5003,6 +5120,7 @@
     });
   })();
   </script>
+  <script type="module" src="/legacy/emotion_mask_module.js?v=20260712-rag-blendshape"></script>
   <script src="/legacy/xiaopu_floating_agent.js?v=20260529-typing-stream"></script>
 </body>
 </html>

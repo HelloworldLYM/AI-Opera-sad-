@@ -667,7 +667,7 @@ def _color_docs() -> list[dict[str, Any]]:
 
 
 def build_documents() -> list[dict[str, Any]]:
-    return [*_face_docs(), *_color_docs(), *PROJECT_DOCS, *ONLINE_DOCS]
+    return [*_face_docs(), *_color_docs(), *EMOTION_FACE_MAPPING_DOCS, *PROJECT_DOCS, *ONLINE_DOCS]
 
 
 def _tokens(text: str) -> list[str]:
@@ -718,3 +718,184 @@ def search_documents(query: str, limit: int = 8, current_face_key: str | None = 
 
     scored.sort(key=lambda item: (-item[0], item[1]["id"]))
     return [doc for _, doc in scored[: max(1, min(limit, 20))]]
+
+
+# These records are retrieved by the existing RAG index. They are curatorial,
+# stage-oriented mappings, not medical or psychological diagnoses.
+EMOTION_FACE_MAPPING_DOCS = [
+    {
+        "id": "emotion-map-neutral-guanyu",
+        "title": "平静情绪匹配关羽",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["neutral", "calm", "平静", "中性"],
+        "mappedFaceKey": "guanyu",
+        "mappedTextureFile": "关羽.png",
+        "mappingPriority": 100,
+        "tags": ["平静", "中性", "关羽", "红脸", "忠勇", "沉稳", "情绪脸谱映射"],
+        "source": "CCTV 戏曲频道",
+        "sourceUrl": "https://www.cctv.com/opera/20040707/101097.shtml",
+        "text": (
+            "当视觉模型输出 neutral 或 calm 时，体验映射到关羽。关羽的红整脸、丹凤眼和卧蚕眉强调忠勇、"
+            "端正与稳定气度，适合作为情绪切换的平静基准脸谱。此映射是数字舞台叙事，不等同于心理诊断。"
+        ),
+    },
+    {
+        "id": "emotion-map-angry-zhangfei",
+        "title": "愤怒情绪匹配张飞",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["angry", "anger", "愤怒", "生气"],
+        "mappedFaceKey": "zhangfei",
+        "mappedTextureFile": "张飞.png",
+        "mappingPriority": 120,
+        "tags": ["愤怒", "生气", "张飞", "黑脸", "刚烈", "勇猛", "情绪脸谱映射"],
+        "source": "CCTV 戏曲频道",
+        "sourceUrl": "https://www.cctv.com/opera/20040707/101097.shtml",
+        "text": (
+            "当视觉模型输出 angry 时，体验映射到张飞。张飞勾黑色脸、环眉环眼，舞台形象刚烈、勇猛、"
+            "声势外放，与高唤醒度的愤怒表情最接近，因此作为首选脸谱。"
+        ),
+    },
+    {
+        "id": "emotion-map-happy-chengyaojin",
+        "title": "喜悦情绪匹配程咬金",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["happy", "joy", "喜悦", "开心"],
+        "mappedFaceKey": "chengyaojin",
+        "mappedTextureFile": "程咬金.png",
+        "mappingPriority": 100,
+        "tags": ["喜悦", "开心", "程咬金", "绿脸", "豪放", "诙谐", "情绪脸谱映射"],
+        "source": "北京市人民政府门户网站",
+        "sourceUrl": "https://www.beijing.gov.cn/renwen/lsfm/jycc/201904/t20190402_1869829.html",
+        "text": (
+            "当视觉模型输出 happy 或 joy 时，体验映射到程咬金。程咬金的草莽豪杰形象豪爽、直来直去，"
+            "并带有喜剧式憨直，适合承接开朗、外放的喜悦状态。"
+        ),
+    },
+    {
+        "id": "emotion-map-sad-fahai",
+        "title": "悲伤情绪匹配法海",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["sad", "sadness", "悲伤", "低落"],
+        "mappedFaceKey": "fahai",
+        "mappedTextureFile": "法海.png",
+        "mappingPriority": 90,
+        "tags": ["悲伤", "低落", "法海", "冷峻", "克制", "情绪脸谱映射"],
+        "source": "AI-Opera 脸谱角色知识库",
+        "sourceUrl": None,
+        "text": (
+            "当视觉模型输出 sad 时，体验映射到法海。知识库中的法海谱式冷峻、克制、秩序感强，"
+            "用于表现低唤醒度的沉郁状态。该关系是策展式近似匹配，而非传统戏曲中的固定情绪公式。"
+        ),
+    },
+    {
+        "id": "emotion-map-surprised-julingshen",
+        "title": "惊讶情绪匹配巨灵神",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["surprised", "surprise", "惊讶", "震惊"],
+        "mappedFaceKey": "julingshen",
+        "mappedTextureFile": "巨灵神.png",
+        "mappingPriority": 100,
+        "tags": ["惊讶", "震惊", "巨灵神", "神怪脸", "夸张", "情绪脸谱映射"],
+        "source": "AI-Opera 脸谱角色知识库",
+        "sourceUrl": None,
+        "text": (
+            "当视觉模型输出 surprised 时，体验映射到巨灵神。金、银、黑强对比和放大的神怪纹样具有"
+            "强烈突发感与舞台张力，适合把惊讶表情转译为夸张的神将脸谱。"
+        ),
+    },
+    {
+        "id": "emotion-map-disgust-dianwei",
+        "title": "厌恶情绪匹配典韦",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["disgusted", "disgust", "厌恶", "嫌恶"],
+        "mappedFaceKey": "dianwei",
+        "mappedTextureFile": "典韦.png",
+        "mappingPriority": 90,
+        "tags": ["厌恶", "嫌恶", "典韦", "黄脸", "凶猛", "压迫感", "情绪脸谱映射"],
+        "source": "北京市人民政府门户网站",
+        "sourceUrl": "https://www.beijing.gov.cn/renwen/lsfm/jycc/201904/t20190402_1869829.html",
+        "text": (
+            "当视觉模型输出 disgusted 时，体验映射到典韦。黄色脸谱常表现骁勇、桀骜或凶猛，"
+            "典韦的厚重黑线和战场压迫感可承接厌恶表情中的排斥与紧张。"
+        ),
+    },
+    {
+        "id": "emotion-map-fear-douerdun",
+        "title": "恐惧情绪匹配窦尔敦",
+        "category": "emotion-face-mapping",
+        "emotionKeys": ["fearful", "fear", "恐惧", "紧张"],
+        "mappedFaceKey": "douerdun",
+        "mappedTextureFile": "窦尔敦.png",
+        "mappingPriority": 80,
+        "tags": ["恐惧", "紧张", "窦尔敦", "蓝脸", "刚强", "警觉", "情绪脸谱映射"],
+        "source": "Smithsonian National Museum of Asian Art",
+        "sourceUrl": "https://asia-archive.si.edu/learn/for-educators/teaching-china-with-the-smithsonian/videos/face-changing/",
+        "text": (
+            "当视觉模型输出 fearful 时，体验映射到窦尔敦。Smithsonian 资料说明变脸面具可表现恐惧与紧张；"
+            "项目再结合窦尔敦蓝脸所代表的刚强、有心计与警觉，将恐惧转译为戒备状态。"
+        ),
+    },
+]
+
+_EMOTION_ALIASES = {
+    "neutral": "neutral", "calm": "neutral", "平静": "neutral", "中性": "neutral",
+    "happy": "happy", "joy": "happy", "喜悦": "happy", "开心": "happy",
+    "angry": "angry", "anger": "angry", "愤怒": "angry", "生气": "angry",
+    "sad": "sad", "sadness": "sad", "悲伤": "sad", "低落": "sad",
+    "surprised": "surprised", "surprise": "surprised", "惊讶": "surprised", "震惊": "surprised",
+    "disgusted": "disgusted", "disgust": "disgusted", "厌恶": "disgusted", "嫌恶": "disgusted",
+    "fearful": "fearful", "fear": "fearful", "恐惧": "fearful", "紧张": "fearful",
+}
+
+
+def resolve_emotion_face_mapping(emotion: str) -> dict[str, Any]:
+    normalized = str(emotion or "").strip().lower()
+    canonical = _EMOTION_ALIASES.get(normalized)
+    if canonical is None:
+        raise KeyError(f"Unsupported emotion: {emotion}")
+
+    query = f"情绪脸谱映射 {canonical} {normalized}"
+    hits = search_documents(query, limit=20)
+    hit_rank = {doc["id"]: index for index, doc in enumerate(hits)}
+    candidates = [
+        doc
+        for doc in EMOTION_FACE_MAPPING_DOCS
+        if canonical in [str(item).lower() for item in doc.get("emotionKeys", [])]
+        and doc["id"] in hit_rank
+    ]
+    if not candidates:
+        candidates = [
+            doc
+            for doc in EMOTION_FACE_MAPPING_DOCS
+            if canonical in [str(item).lower() for item in doc.get("emotionKeys", [])]
+        ]
+    if not candidates:
+        raise KeyError(f"No RAG mapping for emotion: {canonical}")
+
+    candidates.sort(
+        key=lambda doc: (
+            hit_rank.get(doc["id"], 999),
+            -int(doc.get("mappingPriority", 0)),
+            doc["id"],
+        )
+    )
+    selected = candidates[0]
+    face_key = str(selected["mappedFaceKey"])
+    face = next((item for item in FACES if str(item["key"]) == face_key), None)
+    if face is None:
+        raise KeyError(f"Mapped face does not exist: {face_key}")
+
+    return {
+        "emotion": canonical,
+        "face": face,
+        "textureFile": selected["mappedTextureFile"],
+        "reason": selected["text"],
+        "evidence": {
+            "documentId": selected["id"],
+            "title": selected["title"],
+            "source": selected.get("source"),
+            "sourceUrl": selected.get("sourceUrl"),
+        },
+        "policy": "rag-emotion-face-v1",
+        "disclaimer": "这是面向数字舞台的文化映射，不构成心理状态或健康诊断。",
+    }
