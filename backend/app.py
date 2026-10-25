@@ -13,7 +13,6 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.services.blender_service import find_blender_executable, render_glb_with_blender
 from backend.services.ai_agent_service import (
     answer_with_rag,
     deepseek_config,
@@ -22,13 +21,14 @@ from backend.services.ai_agent_service import (
     recommend_face,
     run_agent,
 )
-from backend.services.culture_knowledge_service import answer_query, list_faces, search_faces
+from backend.services.blender_service import find_blender_executable, render_glb_with_blender
+from backend.services.creative_face_design_service import generate_creative_face_design
 from backend.services.cultural_graph_service import (
     build_cultural_graph,
     explain_graph_context,
     search_graph,
 )
-from backend.services.creative_face_design_service import generate_creative_face_design
+from backend.services.culture_knowledge_service import answer_query, list_faces, search_faces
 from backend.services.detail_map_service import generate_detail_normal_map
 from backend.services.face_reconstruction_service import reconstruct_face_to_obj
 from backend.services.gaussian_gallery_service import (
@@ -60,7 +60,6 @@ from backend.services.rag_knowledge_base import resolve_emotion_face_mapping, se
 from backend.services.segmentation_service import sam_config, segment_occlusion
 from backend.services.uv_service import generate_uv_for_texture
 from backend.services.vision_quality_service import visual_quality_report, vlm_config
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 JOBS_ROOT = PROJECT_ROOT / "backend" / "jobs"

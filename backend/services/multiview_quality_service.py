@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 DEFAULT_PROFILE = "multiview-facepaint-mask-v1"
 RECONSTRUCTION_PROFILES: dict[str, dict[str, Any]] = {
     DEFAULT_PROFILE: {

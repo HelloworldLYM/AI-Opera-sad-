@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import json
 import os
-import time
 import urllib.error
 import urllib.request
 from typing import Any
 
-from backend.services.culture_knowledge_service import answer_query, list_faces, search_faces
 from backend.services.cultural_graph_service import (
     contextual_bandit_recommend,
     explain_graph_context,
 )
+from backend.services.culture_knowledge_service import answer_query, list_faces, search_faces
 from backend.services.opera_media_service import get_opera_media
 from backend.services.rag_knowledge_base import search_documents
-
 
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"

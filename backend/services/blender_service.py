@@ -8,7 +8,6 @@ from pathlib import Path
 
 from backend.services.trimesh_service import export_glb_with_trimesh
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BLENDER_SCRIPT = PROJECT_ROOT / "backend" / "scripts" / "apply_facepaint_to_obj.py"
 

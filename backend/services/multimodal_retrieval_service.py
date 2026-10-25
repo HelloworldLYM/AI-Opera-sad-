@@ -16,7 +16,6 @@ from PIL import Image
 
 from backend.services.culture_knowledge_service import list_faces
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FACE_DIR = PROJECT_ROOT / "public" / "legacy" / "faces"
 

@@ -2,7 +2,7 @@
 
 > **English**: AI-Opera is an interactive Sichuan-opera "face-changing" (变脸) web experience. It combines real-time face/gesture tracking (MediaPipe), a cited RAG knowledge base, a GraphRAG cultural knowledge graph, a tool-calling guide agent, and a personalized 3D mask generation pipeline (3DMM fitting → UV baking → GLB export).
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-green) ![React](https://img.shields.io/badge/React-18-61dafb) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6) ![Three.js](https://img.shields.io/badge/Three.js-0.160-black) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-green) ![React](https://img.shields.io/badge/React-18-61dafb) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6) ![Three.js](https://img.shields.io/badge/Three.js-0.160-black) ![Tests](https://img.shields.io/badge/tests-27%20passing-brightgreen) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 AI-Opera 把**实时视觉交互**、**可溯源的川剧文化知识库**和**个性化三维脸谱生成**组织成同一条体验链路：用户在摄像头前挥手、转头、举扇即可触发变脸；随行的 AI 导览"小谱"基于 RAG 与知识图谱讲解当前脸谱的角色、颜色寓意与剧目出处，并能根据观展行为推荐下一张脸谱。
 
@@ -68,7 +68,26 @@ python -m uvicorn backend.app:app --port 8000
 
 未配置 GPU 或未下载 3DDFA-V3 权重时，系统会自动降级：体验馆、收藏馆、RAG/Agent 导览、三维模型展示全部可用，仅"个性化三维面罩重建"走前端 OBJ 或 mock 路径。
 
-### 3. 环境变量
+### 3. 测试与 CI
+
+后端带有离线 pytest 套件（RAG 检索、GraphRAG、bandit 推荐、Agent 工具编排、HTTP API），不需要 GPU 和 LLM Key：
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest          # 27 个测试
+ruff check backend
+```
+
+GitHub Actions（`.github/workflows/ci.yml`）在每次 push / PR 时自动执行后端 pytest + ruff lint 和前端 `tsc + vite build`。
+
+### 4. Docker（后端 API）
+
+```bash
+docker build -t ai-opera-api .
+docker run -p 8000:8000 --env-file .env ai-opera-api
+```
+
+### 5. 环境变量
 
 复制 `.env.example` 为 `.env`（`.env` 不会被提交）：
 
@@ -112,7 +131,9 @@ python -m uvicorn backend.app:app --port 8000
 │  └─ generated_masks/          # 示例个人三维脸谱 OBJ
 ├─ backend/
 │  ├─ app.py                    # FastAPI 路由
-│  └─ services/                 # RAG / GraphRAG / Agent / 重建 / 质检 / 唱段等服务
+│  ├─ services/                 # RAG / GraphRAG / Agent / 重建 / 质检 / 唱段等服务
+│  └─ tests/                    # pytest 套件（RAG / GraphRAG / Agent / API）
+├─ .github/workflows/ci.yml     # GitHub Actions：pytest + ruff + 前端构建
 ├─ docs/                        # 技术答辩剖析、RAG 来源整理
 ├─ scripts/                     # CPU/GPU 环境安装与启动脚本
 └─ training/                    # 手势关键点样本采集与训练脚本

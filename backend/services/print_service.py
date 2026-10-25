@@ -7,7 +7,6 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OBJ_URL = "/generated_masks/autodl_user_001/personal_face.obj"
 DEFAULT_OBJ_PATH = PROJECT_ROOT / "public" / "generated_masks" / "autodl_user_001" / "personal_face.obj"

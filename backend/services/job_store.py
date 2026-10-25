@@ -6,7 +6,6 @@ import time
 import uuid
 from typing import Any
 
-
 _jobs: dict[str, dict[str, Any]] = {}
 _lock = threading.RLock()
 _TERMINAL_STATUSES = {"done", "failed", "cancelled"}

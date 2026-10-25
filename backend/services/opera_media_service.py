@@ -6,7 +6,6 @@ from urllib.parse import quote
 
 from backend.services.culture_knowledge_service import list_faces
 
-
 PUBLIC_ROOT = Path(__file__).resolve().parents[2] / "public"
 FALLBACK_AUDIO_URL = "/legacy/audio/opera-background.mp3"
 SICHUAN_OPERA_CENTER_URL = "http://cjfzyjzx.scyishu.org.cn/"

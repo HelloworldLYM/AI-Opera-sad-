@@ -7,7 +7,6 @@ from pathlib import Path
 
 from backend.services.culture_knowledge_service import FACES
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = PROJECT_ROOT / "backend" / "scripts"
 FACES_DIR = PROJECT_ROOT / "public" / "legacy" / "faces"

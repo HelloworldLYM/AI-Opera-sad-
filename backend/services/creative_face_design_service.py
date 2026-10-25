@@ -9,7 +9,6 @@ from backend.services.ai_agent_service import _call_deepseek, deepseek_config
 from backend.services.culture_knowledge_service import list_faces
 from backend.services.rag_knowledge_base import search_documents
 
-
 PALETTES: dict[str, list[str]] = {
     "忠义": ["#b91524", "#111827", "#f8e4a6", "#ffffff"],
     "威猛": ["#111111", "#b91524", "#f5d06f", "#ffffff"],

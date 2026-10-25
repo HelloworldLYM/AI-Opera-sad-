@@ -7,7 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_OBJ = PROJECT_ROOT / "backend" / "samples" / "raw_face.obj"
 DEFAULT_DDFA_V3_REPO = PROJECT_ROOT / "3DDFA-V3"

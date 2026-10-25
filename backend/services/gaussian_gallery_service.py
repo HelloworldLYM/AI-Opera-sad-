@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 from typing import Any
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DIGITAL_ROOT = PROJECT_ROOT / "public" / "digital_exhibition"
 SCENES_ROOT = DIGITAL_ROOT / "scenes"

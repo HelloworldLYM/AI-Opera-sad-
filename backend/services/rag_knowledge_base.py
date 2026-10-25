@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from typing import Any
 
 from backend.services.culture_knowledge_service import FACES
-
 
 COLOR_DOCS = [
     ("color-red", "红色脸谱寓意", "红色常表现忠义、英勇、正直，适合关羽、姜维等忠勇人物。"),
@@ -666,7 +666,9 @@ def _color_docs() -> list[dict[str, Any]]:
     ]
 
 
+@lru_cache(maxsize=1)
 def build_documents() -> list[dict[str, Any]]:
+    """Assemble the retrieval corpus once; documents are treated as immutable."""
     return [*_face_docs(), *_color_docs(), *EMOTION_FACE_MAPPING_DOCS, *PROJECT_DOCS, *ONLINE_DOCS]
 
 

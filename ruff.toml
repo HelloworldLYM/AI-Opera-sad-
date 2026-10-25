@@ -1,0 +1,9 @@
+# Pragmatic lint profile: correctness + import order.
+# Broad `except Exception` fallbacks are intentional in services that must
+# degrade gracefully (external LLM/SAM/CLIP providers), so blind-except rules
+# are not enabled.
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]

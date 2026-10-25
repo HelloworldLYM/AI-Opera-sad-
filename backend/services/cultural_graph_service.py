@@ -7,7 +7,6 @@ from typing import Any
 
 from backend.services.culture_knowledge_service import FACES, search_faces
 
-
 COLOR_MEANINGS = {
     "红": "忠义、英勇、正直，也可表现英武和血性。",
     "黑": "刚直、威猛、粗豪、公正，需结合人物区分不同类型的刚烈、威压与草莽气。",
